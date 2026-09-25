@@ -1,0 +1,102 @@
+# Every alert carries a `service` label (OpsPilot correlates on it) and a `severity` label.
+
+groups:
+  - name: shop-traffic
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum by (service) (rate(http_requests_total{namespace="shop", status_code=~"5.."}[1m]))
+            /
+          sum by (service) (rate(http_requests_total{namespace="shop"}[1m]))
+            > 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} is failing {{ $value | humanizePercentage }} of requests"
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (rate(http_request_duration_seconds_bucket{namespace="shop"}[2m]))
+          ) > 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} p95 latency is {{ $value | humanizeDuration }}"
+
+      - alert: WorkerPoolSaturated
+        expr: |
+          sum by (service) (avg_over_time(worker_pool_busy{namespace="shop"}[1m]))
+            /
+          sum by (service) (avg_over_time(worker_pool_size{namespace="shop"}[1m]))
+            > 0.9
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} is using {{ $value | humanizePercentage }} of its processor connections"
+
+  - name: shop-workloads
+    rules:
+      # Memory is measured on the pod's cgroup (container=""), because some container
+      # runtimes, minikube's among them, only expose pod-level series. Every shop pod runs a
+      # single container, so the pod's limit is that container's limit.
+      - alert: MemoryNearLimit
+        expr: |
+          label_replace(
+            max by (namespace, pod) (container_memory_working_set_bytes{namespace="shop", pod!="", container=""})
+              /
+            sum by (namespace, pod) (kube_pod_container_resource_limits{namespace="shop", resource="memory"}),
+            "service", "$1", "pod", "(.+)-[a-z0-9]+-[a-z0-9]{5}"
+          ) > 0.8
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit"
+
+      # kube-state-metrics reports per container, and the container name is the service name.
+      - alert: PodCrashLooping
+        expr: |
+          label_replace(
+            max by (namespace, pod, container) (kube_pod_container_status_waiting_reason{namespace="shop", reason="CrashLoopBackOff"}),
+            "service", "$1", "container", "(.+)"
+          ) == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.pod }} is crash-looping"
+
+      - alert: FrequentRestarts
+        expr: |
+          label_replace(
+            increase(kube_pod_container_status_restarts_total{namespace="shop"}[10m]),
+            "service", "$1", "container", "(.+)"
+          ) >= 3
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.pod }} restarted {{ $value | humanize }} times in 10 minutes"
+
+      - alert: ReplicasUnavailable
+        expr: |
+          label_replace(
+            kube_deployment_status_replicas_unavailable{namespace="shop"},
+            "service", "$1", "deployment", "(.+)"
+          ) > 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.deployment }} has {{ $value }} unavailable replicas"
+
+      - alert: TargetDown
+        expr: label_replace(up{namespace="shop"}, "service", "$1", "app", "(.+)") == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus can't scrape {{ $labels.pod }}"

@@ -1,0 +1,40 @@
+# Local minikube setup: the base, plus NodePorts that scripts/cluster.mjs publishes on
+# localhost, and a Grafana you can use without logging in.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+patches:
+  - path: grafana-anonymous.yaml
+
+  - target: { kind: Service, namespace: shop, name: gateway }
+    patch: |-
+      - { op: replace, path: /spec/type, value: NodePort }
+      - { op: add, path: /spec/ports/0/nodePort, value: 30080 }
+
+  - target: { kind: Service, namespace: observability, name: grafana }
+    patch: |-
+      - { op: replace, path: /spec/type, value: NodePort }
+      - { op: add, path: /spec/ports/0/nodePort, value: 30300 }
+
+  - target: { kind: Service, namespace: observability, name: prometheus }
+    patch: |-
+      - { op: replace, path: /spec/type, value: NodePort }
+      - { op: add, path: /spec/ports/0/nodePort, value: 30090 }
+
+  - target: { kind: Service, namespace: observability, name: alertmanager }
+    patch: |-
+      - { op: replace, path: /spec/type, value: NodePort }
+      - { op: add, path: /spec/ports/0/nodePort, value: 30093 }
+
+  - target: { kind: Service, namespace: observability, name: loki }
+    patch: |-
+      - { op: replace, path: /spec/type, value: NodePort }
+      - { op: add, path: /spec/ports/0/nodePort, value: 30100 }
+
+  - target: { kind: Service, namespace: observability, name: tempo }
+    patch: |-
+      - { op: replace, path: /spec/type, value: NodePort }
+      - { op: add, path: /spec/ports/0/nodePort, value: 30200 }

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+
+# secrets stay local; .env.example documents what is needed
+.env
+.env.*
+!.env.example
+
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

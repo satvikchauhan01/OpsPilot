@@ -1,0 +1,16 @@
+# The system OpsPilot watches and repairs
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop
+---
+# Simulated customers, kept apart so their pods never show up as part of the shop
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: loadgen
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability

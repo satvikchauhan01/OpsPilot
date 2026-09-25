@@ -1,0 +1,17 @@
+{
+  "name": "opspilot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI incident response and reliability copilot for Kubernetes",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "cluster:up": "node scripts/cluster.mjs up",
+    "cluster:stop": "node scripts/cluster.mjs stop",
+    "cluster:down": "node scripts/cluster.mjs down",
+    "cluster:status": "node scripts/cluster.mjs status",
+    "scenario": "node scripts/scenario.mjs"
+  }
+}

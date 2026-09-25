@@ -1,0 +1,10 @@
+{
+  "gateway": [{ "version": "1.0.0" }],
+  "checkout": [
+    { "version": "1.4.1" },
+    { "version": "1.4.2", "defect": "coupon-lookup" }
+  ],
+  "payments": [{ "version": "2.3.0" }],
+  "inventory": [{ "version": "1.8.0" }],
+  "loadgen": [{ "version": "1.0.0" }]
+}

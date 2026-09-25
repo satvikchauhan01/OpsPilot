@@ -1,0 +1,20 @@
+{
+  "name": "opspilot-demo-shop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small e-commerce system that OpsPilot watches, breaks on purpose and repairs",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.80.0",
+    "@opentelemetry/resources": "^2.11.0",
+    "@opentelemetry/sdk-node": "^0.222.0",
+    "express": "^5.2.1",
+    "pino": "^10.3.1",
+    "prom-client": "^15.1.3"
+  }
+}
