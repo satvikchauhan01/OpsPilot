@@ -115,8 +115,12 @@ function reset() {
 
 function status() {
   kubectl([
-    '-n', 'shop', 'get', 'deployments',
-    '-o', 'custom-columns=SERVICE:.metadata.name,IMAGE:.spec.template.spec.containers[0].image,READY:.status.readyReplicas,WANTED:.spec.replicas',
+    '-n',
+    'shop',
+    'get',
+    'deployments',
+    '-o',
+    'custom-columns=SERVICE:.metadata.name,IMAGE:.spec.template.spec.containers[0].image,READY:.status.readyReplicas,WANTED:.spec.replicas',
   ]);
 
   console.log('\nInjected faults:');

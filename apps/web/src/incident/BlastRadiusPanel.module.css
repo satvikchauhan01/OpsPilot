@@ -1,0 +1,19 @@
+.summary {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+}
+
+.summary p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.listItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

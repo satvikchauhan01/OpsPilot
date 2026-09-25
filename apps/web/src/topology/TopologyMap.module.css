@@ -1,0 +1,116 @@
+.scroller {
+  overflow-x: auto;
+}
+
+.map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.arrow {
+  fill: var(--line-strong);
+}
+
+.edge {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+  transition: opacity 0.15s;
+}
+
+.edge[data-failing] {
+  stroke: var(--critical);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  animation: flow 0.9s linear infinite;
+}
+
+.edge[data-dimmed],
+.node[data-dimmed] {
+  opacity: 0.25;
+}
+
+.node {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.node[data-external] {
+  cursor: default;
+}
+
+.node:focus-visible {
+  outline: none;
+}
+
+.node:focus-visible .box {
+  stroke: var(--focus-ring);
+  stroke-width: 2;
+}
+
+.box {
+  fill: var(--surface-2);
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.node:hover .box,
+.node[data-selected] .box {
+  fill: var(--hover);
+}
+
+.node[data-external] .box {
+  fill: transparent;
+  stroke: var(--line);
+}
+
+.node[data-role='suspect'] .box {
+  stroke: var(--critical);
+  stroke-width: 2;
+}
+
+.node[data-role='impacted'] .box {
+  stroke: var(--warning);
+  stroke-width: 1.5;
+}
+
+.node[data-role='alerting'] .box {
+  stroke: var(--warning);
+}
+
+.name {
+  fill: var(--ink);
+  font: 500 13px var(--font-mono);
+}
+
+.stats {
+  fill: var(--ink-3);
+  font: 400 11px var(--font-mono);
+}
+
+.node[data-external] .name {
+  fill: var(--ink-2);
+}
+
+.badge {
+  font: 500 10px var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-anchor: end;
+  fill: var(--ink-2);
+}
+
+.node[data-role='suspect'] .badge {
+  fill: var(--critical);
+}
+
+.node[data-role='impacted'] .badge {
+  fill: var(--warning);
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -22;
+  }
+}

@@ -1,0 +1,362 @@
+.panel {
+  border-top: 2px solid var(--signal);
+}
+
+.run {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.run:hover:not(:disabled) {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fff;
+}
+
+.run:disabled {
+  opacity: 0.6;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr);
+  gap: var(--space-5);
+}
+
+.findings {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  min-width: 0;
+}
+
+.summary {
+  font-size: 16px;
+  line-height: 1.55;
+  max-width: 70ch;
+}
+
+.hypotheses {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hypothesis {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.hypothesis[data-rank='1'] {
+  border-color: var(--line-strong);
+  box-shadow: inset 3px 0 0 var(--signal);
+}
+
+.hypothesisHead {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.rank {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  font: 600 12px var(--font-mono);
+}
+
+.hypothesis[data-rank='1'] .rank {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.hypothesisTitle p {
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.hypothesisMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 4px;
+}
+
+.cause,
+.action {
+  font: 500 11px var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cause {
+  color: var(--info);
+}
+
+.action {
+  color: var(--ink-3);
+}
+
+.confidence {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  min-width: 84px;
+}
+
+.confidenceValue {
+  font: 600 15px var(--font-mono);
+}
+
+.confidenceTrack {
+  position: relative;
+  width: 84px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--inset);
+}
+
+.confidenceTrack span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  background: var(--info);
+}
+
+.reasoning {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.evidenceList {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.evidenceList li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.evidenceChip {
+  padding: 1px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  color: var(--ink);
+  font: 500 11px/1.5 var(--font-mono);
+  cursor: pointer;
+}
+
+.evidenceChip:hover,
+.evidenceChip[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.evidenceDetail {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--inset);
+}
+
+.evidenceDetail header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.evidenceId {
+  font: 600 12px var(--font-mono);
+}
+
+.evidenceTitle {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+
+.close {
+  padding: 2px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.json {
+  max-height: 320px;
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  font: 400 12px/1.5 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.working {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-4) 0;
+}
+
+.workingTitle {
+  font-weight: 600;
+}
+
+.pulse {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--signal);
+  animation: breathe 1.4s ease-in-out infinite;
+  flex: none;
+}
+
+.muted {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.error {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--critical);
+  background: var(--critical-wash);
+}
+
+.steps {
+  display: grid;
+  align-content: start;
+  margin: 0;
+  padding: 0 0 0 var(--space-4);
+  border-left: 1px solid var(--line);
+  list-style: none;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 42px 10px 1fr;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.stepTime {
+  font: 400 11px var(--font-mono);
+  color: var(--ink-3);
+  text-align: right;
+}
+
+.stepMark {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  transform: translateY(-1px);
+}
+
+.step[data-kind='tool'] .stepMark,
+.step[data-kind='context'] .stepMark {
+  background: var(--info);
+}
+
+.step[data-kind='note'] .stepMark {
+  background: transparent;
+  border: 1px solid var(--ink-3);
+}
+
+.step[data-kind='result'] .stepMark {
+  background: var(--ok);
+}
+
+.step[data-kind='error'] .stepMark,
+.step[data-status='failed'] .stepMark {
+  background: var(--critical);
+}
+
+.step[data-status='running'] .stepMark {
+  animation: breathe 1s ease-in-out infinite;
+}
+
+.stepBody {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.stepTitle {
+  overflow-wrap: anywhere;
+}
+
+.step[data-kind='note'] .stepTitle {
+  color: var(--ink-2);
+  font-style: italic;
+}
+
+.step[data-kind='result'] .stepTitle {
+  font-weight: 600;
+}
+
+.stepDuration {
+  font: 400 11px var(--font-mono);
+  color: var(--ink-3);
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .steps {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-top: var(--space-3);
+  }
+}

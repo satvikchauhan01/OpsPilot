@@ -19,10 +19,15 @@ export function kubectlOutput(args) {
 
 export function runningPods(namespace, app) {
   const names = kubectlOutput([
-    '-n', namespace, 'get', 'pods',
-    '-l', `app.kubernetes.io/name=${app}`,
+    '-n',
+    namespace,
+    'get',
+    'pods',
+    '-l',
+    `app.kubernetes.io/name=${app}`,
     '--field-selector=status.phase=Running',
-    '-o', 'jsonpath={.items[*].metadata.name}',
+    '-o',
+    'jsonpath={.items[*].metadata.name}',
   ]);
   return names.split(/\s+/).filter(Boolean);
 }

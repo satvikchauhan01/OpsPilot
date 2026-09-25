@@ -1,0 +1,119 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  font: 500 12px/1 var(--font-mono);
+  white-space: nowrap;
+}
+
+.tag[data-tone='critical'] {
+  color: var(--critical);
+  background: var(--critical-wash);
+}
+
+.tag[data-tone='warning'] {
+  color: var(--warning);
+  background: var(--warning-wash);
+}
+
+.tag[data-tone='ok'] {
+  color: var(--ok);
+  background: var(--ok-wash);
+}
+
+.tag[data-tone='info'] {
+  color: var(--info);
+  background: var(--info-wash);
+}
+
+.mark {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+}
+
+.mark[data-tone='critical'] {
+  color: var(--critical);
+  border-radius: 1px;
+}
+
+.mark[data-tone='warning'] {
+  color: var(--warning);
+  width: 9px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.mark[data-tone='ok'] {
+  color: var(--ok);
+  border-radius: 50%;
+}
+
+.mark[data-tone='info'],
+.mark[data-tone='neutral'] {
+  width: 7px;
+  height: 7px;
+  transform: rotate(45deg);
+}
+
+.mark[data-tone='info'] {
+  color: var(--info);
+}
+
+.mark[data-tone='neutral'] {
+  color: var(--ink-3);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status[data-tone='critical'] {
+  color: var(--critical);
+}
+
+.status[data-tone='info'] {
+  color: var(--info);
+}
+
+.status[data-tone='warning'] {
+  color: var(--warning);
+}
+
+.status[data-tone='ok'] {
+  color: var(--ok);
+}
+
+.service {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 13px/1 var(--font-mono);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.service[data-emphasis] {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.swatch {
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  flex: none;
+}

@@ -1,0 +1,135 @@
+.timeline {
+  display: grid;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.filters button[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+
+.filterCount {
+  font: 400 11px var(--font-mono);
+  opacity: 0.7;
+}
+
+.list {
+  margin: 0;
+  padding: var(--space-2) 0;
+  list-style: none;
+}
+
+.entry {
+  display: grid;
+  grid-template-columns: 64px 18px 1fr;
+  gap: var(--space-2);
+  padding: 7px var(--space-4) 7px var(--space-3);
+  border-left: 2px solid transparent;
+  outline: none;
+}
+
+.entry:hover,
+.entry:focus-visible,
+.entry[data-active] {
+  background: var(--hover);
+  border-left-color: var(--ink-3);
+}
+
+.entry:focus-visible {
+  border-left-color: var(--focus-ring);
+}
+
+.time {
+  padding-top: 1px;
+  font: 400 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+.rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+}
+
+.rail::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  bottom: -14px;
+  width: 1px;
+  background: var(--line);
+}
+
+.entry:last-child .rail::after {
+  display: none;
+}
+
+.rail > span {
+  position: relative;
+  z-index: 1;
+}
+
+.body {
+  min-width: 0;
+}
+
+.title {
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.count {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  font: 500 11px var(--font-mono);
+  color: var(--ink-2);
+}
+
+.detail {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.kind {
+  font: 500 10px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

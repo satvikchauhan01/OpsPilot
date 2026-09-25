@@ -3,8 +3,10 @@ import { spawnSync } from 'node:child_process';
 // Thin wrappers around the CLIs these scripts drive (docker, minikube, kubectl).
 // Arguments are always passed as arrays and never go through a shell, so nothing needs quoting.
 
-export function run(command, args, options = {}) {
-  const result = spawnSync(command, args, { stdio: 'inherit', ...options });
+// `input`, when given, is written to the command's stdin (e.g. a manifest for `kubectl apply -f -`).
+export function run(command, args, { input, ...options } = {}) {
+  const stdio = input === undefined ? 'inherit' : ['pipe', 'inherit', 'inherit'];
+  const result = spawnSync(command, args, { stdio, input, ...options });
   check(command, args, result);
 }
 

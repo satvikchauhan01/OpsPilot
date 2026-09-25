@@ -1,0 +1,105 @@
+/*
+ * Design tokens. The dark theme is the default look, a control-room console:
+ * graphite surfaces, warm bone ink, and one vermilion signal colour.
+ * The light theme is warm paper and ink.
+ *
+ * Chart series colours are the validated categorical palette (checked for colour-blind
+ * separation and contrast against these surfaces). Status colours are reserved for state
+ * and always come with a shape and a label, never colour alone.
+ */
+:root {
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius: 4px;
+  --radius-sm: 2px;
+  --topbar-height: 52px;
+  --content-width: 1440px;
+}
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #101214;
+  --surface: #16191c;
+  --surface-2: #1c2024;
+  --inset: #0c0e10;
+  --hover: #20252a;
+  --line: #262b30;
+  --line-strong: #363c43;
+
+  --ink: #ede9e0;
+  --ink-2: #b3afa6;
+  --ink-3: #8d8a82;
+
+  --signal: #ff5b3a;
+  --critical: #ff6a4d;
+  --critical-wash: rgba(255, 106, 77, 0.13);
+  --warning: #f2b13a;
+  --warning-wash: rgba(242, 177, 58, 0.13);
+  --ok: #4cc38a;
+  --ok-wash: rgba(76, 195, 138, 0.12);
+  --info: #72aee8;
+  --info-wash: rgba(114, 174, 232, 0.12);
+  --focus-ring: #ede9e0;
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+  --grid: #23282d;
+  --axis: #3a4047;
+  --shade: rgba(255, 106, 77, 0.07);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f1eee6;
+  --surface: #fbf9f4;
+  --surface-2: #f5f2ea;
+  --inset: #e9e5da;
+  --hover: #efebe2;
+  --line: #ddd6c8;
+  --line-strong: #c7bfaf;
+
+  --ink: #1c1a17;
+  --ink-2: #544f47;
+  --ink-3: #6f6a61;
+
+  --signal: #d9401f;
+  --critical: #c2351b;
+  --critical-wash: rgba(194, 53, 27, 0.1);
+  --warning: #946400;
+  --warning-wash: rgba(214, 150, 20, 0.15);
+  --ok: #1d7a4c;
+  --ok-wash: rgba(29, 122, 76, 0.1);
+  --info: #2d6aa8;
+  --info-wash: rgba(45, 106, 168, 0.1);
+  --focus-ring: #1c1a17;
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #4a3aa7;
+  --series-8: #e34948;
+  --grid: #e7e2d7;
+  --axis: #c7bfaf;
+  --shade: rgba(194, 53, 27, 0.06);
+}

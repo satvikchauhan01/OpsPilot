@@ -6,20 +6,20 @@ const chaos = require('./chaos');
 const { register, trackRequests } = require('./metrics');
 const { runShutdownHooks } = require('./lifecycle');
 
-// After SIGTERM the pod keeps serving briefly while Kubernetes removes it from the
-// Service endpoints. Closing straight away would drop requests that are already routed here.
+// Kubernetes stops routing to a terminating pod on its own, but kube-proxy on each node
+// needs a moment to catch up. Serving a few more seconds after SIGTERM avoids dropping
+// requests that were already on their way here.
 const DRAIN_DELAY_MS = 5000;
 
 function createService({ routes, port = Number(process.env.PORT) || 8080 }) {
   const app = express();
-  let ready = true;
 
   app.disable('x-powered-by');
   app.use(express.json());
   app.use(trackRequests);
 
   app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
-  app.get('/readyz', (req, res) => res.status(ready ? 200 : 503).json({ ready }));
+  app.get('/readyz', (req, res) => res.json({ status: 'ready' }));
   app.get('/metrics', async (req, res) => {
     res.type(register.contentType).send(await register.metrics());
   });
@@ -41,7 +41,6 @@ function createService({ routes, port = Number(process.env.PORT) || 8080 }) {
 
   process.once('SIGTERM', async () => {
     logger.info('SIGTERM received, draining connections');
-    ready = false;
     await sleep(DRAIN_DELAY_MS);
     server.close(async () => {
       await runShutdownHooks();

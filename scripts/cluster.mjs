@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { run, output, isInstalled, step } from './lib/shell.mjs';
 import { PROFILE, ROOT, LOCAL_OVERLAY, kubectl, kubectlOutput } from './lib/kube.mjs';
+import { ensureGeneratedSecrets } from './lib/env.mjs';
 
 const DEMO_DIR = path.join(ROOT, 'demo');
 const NAMESPACES = ['observability', 'shop', 'loadgen'];
@@ -57,6 +58,7 @@ function up() {
 
   step('Deploying the shop and the observability stack');
   kubectl(['apply', '-k', LOCAL_OVERLAY]);
+  connectAlertmanager();
   restartDeploymentsUsing(rebuilt);
 
   step('Waiting for every deployment to become available');
@@ -101,14 +103,7 @@ function clusterState() {
 function createCluster() {
   step(`Creating minikube cluster "${PROFILE}"`);
   const ports = ENDPOINTS.map(({ hostPort, nodePort }) => `127.0.0.1:${hostPort}:${nodePort}`);
-  run('minikube', [
-    'start',
-    '-p', PROFILE,
-    '--driver=docker',
-    '--cpus=4',
-    '--memory=6g',
-    `--ports=${ports.join(',')}`,
-  ]);
+  run('minikube', ['start', '-p', PROFILE, '--driver=docker', '--cpus=4', '--memory=6g', `--ports=${ports.join(',')}`]);
 }
 
 // Images are built straight into the cluster's own Docker daemon, so nothing needs to be
@@ -124,14 +119,23 @@ function buildImages() {
       const previousId = imageId(image, env);
 
       step(`Building ${image}`);
-      run('docker', [
-        'build', '--quiet',
-        '--build-arg', `SERVICE=${service}`,
-        '--build-arg', `APP_VERSION=${version}`,
-        '--build-arg', `RELEASE_DEFECT=${defect}`,
-        '-t', image,
-        DEMO_DIR,
-      ], { env });
+      run(
+        'docker',
+        [
+          'build',
+          '--quiet',
+          '--build-arg',
+          `SERVICE=${service}`,
+          '--build-arg',
+          `APP_VERSION=${version}`,
+          '--build-arg',
+          `RELEASE_DEFECT=${defect}`,
+          '-t',
+          image,
+          DEMO_DIR,
+        ],
+        { env },
+      );
 
       if (previousId && imageId(image, env) !== previousId) rebuilt.push(image);
     }
@@ -154,14 +158,39 @@ function restartDeploymentsUsing(images) {
 
   for (const namespace of ['shop', 'loadgen']) {
     const rows = kubectlOutput([
-      '-n', namespace, 'get', 'deployments',
-      '-o', 'jsonpath={range .items[*]}{.metadata.name}={.spec.template.spec.containers[0].image}{"\\n"}{end}',
+      '-n',
+      namespace,
+      'get',
+      'deployments',
+      '-o',
+      'jsonpath={range .items[*]}{.metadata.name}={.spec.template.spec.containers[0].image}{"\\n"}{end}',
     ]);
     for (const row of rows.split('\n').filter(Boolean)) {
       const [name, image] = row.split('=');
       if (images.includes(image)) kubectl(['-n', namespace, 'rollout', 'restart', `deployment/${name}`]);
     }
   }
+}
+
+// Alertmanager, inside the cluster, has to reach the OpsPilot server running on this machine.
+// Its webhook URL and token come from a Secret, filled here from .env (the token is
+// generated on first use, and the server reads the same .env).
+function connectAlertmanager() {
+  const { settings, added } = ensureGeneratedSecrets(path.join(ROOT, '.env'));
+  if (added.length > 0) console.log(`Generated ${added.join(' and ')} in .env`);
+
+  const port = settings.PORT || '4000';
+  const secret = {
+    apiVersion: 'v1',
+    kind: 'Secret',
+    metadata: { name: 'alertmanager-opspilot', namespace: 'observability' },
+    type: 'Opaque',
+    stringData: {
+      url: `http://host.docker.internal:${port}/api/webhooks/alertmanager`,
+      token: settings.ALERTMANAGER_WEBHOOK_TOKEN,
+    },
+  };
+  kubectl(['apply', '-f', '-'], { input: JSON.stringify(secret) });
 }
 
 function minikubeDockerEnv() {
