@@ -116,32 +116,6 @@
   color: var(--ink-3);
 }
 
-.confidence {
-  display: grid;
-  justify-items: end;
-  gap: 4px;
-  min-width: 84px;
-}
-
-.confidenceValue {
-  font: 600 15px var(--font-mono);
-}
-
-.confidenceTrack {
-  position: relative;
-  width: 84px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--inset);
-}
-
-.confidenceTrack span {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 2px;
-  background: var(--info);
-}
-
 .reasoning {
   color: var(--ink-2);
   font-size: 13px;
@@ -226,6 +200,38 @@
   font: 400 12px/1.5 var(--font-mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.evidenceLinks {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.evidenceLinks li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.evidenceLinks a {
+  overflow-wrap: anywhere;
+  text-underline-offset: 2px;
+}
+
+.raw summary {
+  width: fit-content;
+  color: var(--ink-3);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.raw[open] summary {
+  margin-bottom: var(--space-2);
 }
 
 .working {

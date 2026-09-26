@@ -1,0 +1,307 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+/* The index stays in view while a long runbook scrolls past */
+.index {
+  position: sticky;
+  top: calc(var(--topbar-height) + var(--space-4));
+  display: grid;
+  gap: var(--space-3);
+  max-height: calc(100vh - var(--topbar-height) - var(--space-6));
+  overflow-y: auto;
+}
+
+.indexHeader {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.indexHeader h1 {
+  font-size: 24px;
+}
+
+.search {
+  position: relative;
+}
+
+.search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 36px 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.search input::placeholder {
+  color: var(--ink-3);
+}
+
+.search kbd {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  padding: 0 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font: 500 11px/18px var(--font-mono);
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+.search input:focus + kbd,
+.search input:not(:placeholder-shown) + kbd {
+  display: none;
+}
+
+.list,
+.results {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.item {
+  border-bottom: 1px solid var(--line);
+}
+
+.itemLink {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-3);
+  text-decoration: none;
+}
+
+.itemLink:hover {
+  background: var(--hover);
+}
+
+.item[data-active] .itemLink {
+  box-shadow: inset 3px 0 0 var(--signal);
+}
+
+.itemTitle {
+  font-weight: 500;
+}
+
+.itemSummary {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.toc {
+  display: grid;
+  margin: 0 0 var(--space-3) var(--space-3);
+  padding: 0 0 0 var(--space-3);
+  list-style: none;
+  border-left: 1px solid var(--line-strong);
+}
+
+.toc a {
+  display: block;
+  padding: 3px 0;
+  color: var(--ink-2);
+  font: 400 13px/1.4 var(--font-mono);
+  text-decoration: none;
+}
+
+.toc a:hover {
+  color: var(--ink);
+}
+
+.toc a[aria-current='location'] {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.resultLink {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.resultRunbook {
+  font: 500 10px/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.resultHeading {
+  font-weight: 500;
+}
+
+.resultLink:hover .resultHeading {
+  text-decoration: underline;
+}
+
+.resultText {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.reader {
+  min-width: 0;
+}
+
+.doc {
+  display: grid;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.back {
+  display: none;
+}
+
+.docHeader {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.docHeader h2 {
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-2) var(--space-5);
+  margin: var(--space-2) 0 0;
+}
+
+.meta div {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.meta dt {
+  font: 500 10px/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.meta dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.alert {
+  font: 400 12px/1.5 var(--font-mono);
+  color: var(--ink-2);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  scroll-margin-top: calc(var(--topbar-height) + var(--space-4));
+  transition: background-color 0.4s;
+}
+
+.section + .section {
+  border-top: 1px solid var(--line);
+}
+
+.section[data-active] {
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--signal);
+}
+
+.section h3 {
+  font-size: 16px;
+}
+
+.headingLink {
+  text-decoration: none;
+}
+
+.headingLink:hover {
+  text-decoration: underline;
+}
+
+.guide {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 62ch;
+  padding: var(--space-5);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+
+.muted {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+/* One column: the index is the start page, and a runbook takes over the screen with the
+   search box still on top. */
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .index {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .page[data-reading] .listArea,
+  .page:not([data-reading]) .reader {
+    display: none;
+  }
+
+  .back {
+    display: block;
+    padding: var(--space-3) var(--space-4) 0;
+    font-size: 13px;
+    text-decoration: none;
+    color: var(--ink-2);
+  }
+
+  .docHeader,
+  .section {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+}

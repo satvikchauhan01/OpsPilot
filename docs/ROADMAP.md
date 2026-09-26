@@ -7,9 +7,9 @@ only after the current one has been committed. IDs such as `DS-5` refer to
 | Phase | Theme | Status |
 |-------|-------|--------|
 | 1 | Foundation: demo system, Kubernetes, observability | Done |
-| 2 | Incident core: ingestion, correlation, changes, timeline, topology, UI shell | Done, in review |
-| 3 | AI investigation and root-cause analysis | Done, in review |
-| 4 | Knowledge: runbook RAG and incident memory | Not started |
+| 2 | Incident core: ingestion, correlation, changes, timeline, topology, UI shell | Done |
+| 3 | AI investigation and root-cause analysis | Done |
+| 4 | Knowledge: runbook RAG and incident memory | Done, in review |
 | 5 | Remediation: approval, execution, verification | Not started |
 | 6 | Postmortems, hardening and public deployment | Not started |
 
@@ -55,8 +55,7 @@ everything to green within 5 minutes, and Grafana shows all four services.
 
 **Goal:** alerts turn into incidents with full context, and the UI shows them live.
 
-- [x] `apps/server`: Express API, config, MongoDB connection and data models
-  (verified against a local MongoDB; switching to Atlas only needs the connection string in `.env`)
+- [x] `apps/server`: Express API, config, MongoDB connection and data models (on MongoDB Atlas M0)
 - [x] Sign-in with roles and a seeded admin — SE-1, SE-2
 - [x] Alertmanager webhook with a shared secret — IN-1
 - [x] Correlation engine and incident lifecycle — IN-2, IN-3
@@ -71,7 +70,7 @@ everything to green within 5 minutes, and Grafana shows all four services.
 **Exit criteria:** S1 and S3 each produce exactly one incident whose timeline and blast
 radius are correct, and the UI updates without a refresh.
 
-**Needs from you:** the MongoDB Atlas connection string (a free M0 cluster).
+**Needs from you:** the MongoDB Atlas connection string (a free M0 cluster), provided on 2026-09-26.
 
 **Verification (2026-09-25):**
 
@@ -90,6 +89,9 @@ radius are correct, and the UI updates without a refresh.
 - UI: overview, incident list (with `j`/`k`/Enter) and incident detail, in dark and light themes
   and at 375 px. Every chart has a legend, a crosshair tooltip, keyboard reading and a table view.
 - QA-1 (partial): 50 unit tests pass (`npm test`), and `npm run lint` is clean.
+- Atlas (2026-09-26): the first runs used a local MongoDB. Moving to Atlas only took the connection
+  string. On Atlas, S1 opened INC-1 after 132 s, and its timeline showed the deploy before the
+  first alert. The AI named checkout / `bad_deploy` in 3 model calls.
 
 ---
 
@@ -129,16 +131,57 @@ each).
 
 **Goal:** OpsPilot uses runbooks and remembers past incidents.
 
-- [ ] Runbook corpus (at least 6) — KN-1
-- [ ] Chunking, local embeddings (transformers.js) and the Atlas vector index — KN-1, C-5
-- [ ] Runbook retrieval in the agent and on the incident page — KN-2
-- [ ] Incident memory and similar-incident search — KN-3, KN-4
-- [ ] Runbook browser page — KN-5
+- [x] Runbook corpus: 8 runbooks in [`runbooks/`](../runbooks) — KN-1
+- [x] Chunking, local embeddings (transformers.js) and the Atlas vector index — KN-1, C-5
+- [x] Runbook retrieval in the agent and on the incident page — KN-2
+- [x] Incident memory and similar-incident search — KN-3, KN-4
+- [x] Runbook browser page — KN-5
 
 **Exit criteria:** incidents show relevant runbook sections, and a repeated S1 finds its
 earlier occurrence.
 
-**Needs from you:** nothing (the vector index is created by a script).
+**Needs from you:** nothing (the server creates the vector indexes itself).
+
+**Verification (2026-09-26, MongoDB Atlas M0, `Xenova/all-MiniLM-L6-v2`):**
+
+- KN-1: 8 runbooks cover every alert rule and every cause type. Unit tests check that each one
+  parses, fits the embedding model's input, and only names alerts that exist in the Prometheus
+  rules. They are split into 44 chunks, embedded on the server's CPU (the model loads in
+  about 5 s, and a query takes about 7 ms), and stored with the `runbook_chunks` index. On
+  restart only changed files are embedded again. Atlas built both indexes on the free tier
+  in under 40 s.
+- KN-2: an incident is described by the service it starts in and that service's own symptoms,
+  the other services affected, and the net changes to it in the 30 minutes before. Once the
+  root cause is known, it is added, and only runbooks written for that cause type are searched.
+  Every investigation opens with this runbook search, and its findings can cite the result.
+  On S3 the AI also searched the runbooks on its own and cited them (E9).
+- Retrieval checks against the real incidents picked the wording. For chunks: title, heading
+  and the section's prose put the right runbook first in 8 of 9 test queries, and adding the
+  alert names dropped that to 6. For incidents: listing every symptom in firing order found
+  the right runbook first for 7 of the 9 incidents, and missed both S4 ones. There the
+  saturation alert fires last, behind the errors it causes upstream. Describing the starting
+  service's own symptoms first finds it for all 9, and every incident page shows the
+  runbook for its scenario.
+- KN-3: every resolved incident is stored in `incident_memory` with its symptoms, the changes
+  before it, the root cause, and what fixed it. The fix is the net change made while its
+  alerts were firing, or else the resolver's note. Changes are netted, so a release rolled
+  back inside the window counts as nothing. Only changes on the service where the incident
+  starts describe it. Before that, leftover deploys and rollbacks from earlier scenarios made
+  unrelated incidents look 70–80% alike. The postmortem is added in Phase 6 (PM-3).
+- KN-4: S1 run a second time opened INC-2, which lists INC-1 first, with "bad deploy in
+  checkout" as the cause and "checkout 1.4.2 → 1.4.1" as the fix. The AI saw it before its own
+  conclusion and cited it (E5) next to the deploy (E4) and the error logs (E7), in 2 model
+  calls. Across INC-1 to INC-9, every repeat lists its earlier occurrence first at 92–98%.
+  Look-alikes with another cause (S3 and S4 both slow payments down) appear lower, at 77–83%.
+  Unrelated incidents stay below the 0.65 cut-off: at most 0.57.
+- KN-5: the Runbooks page searches by meaning ("pods keep dying" finds the crash-loop
+  runbook, 63–77%). It keeps the search in the URL, highlights the linked section, and works
+  at 375 px and in both themes. It loads separately, which keeps the main bundle at 398 kB.
+- AI-6 still holds with the Phase 4 agent. A check of one run per scenario
+  (`npm run evaluate -- --runs 1 --report …`) got 4 of 4 right, at 100% confidence, in 2 to 7
+  model calls each (INC-10 to INC-13). The full five-run evaluation in
+  [evaluation.md](evaluation.md) is from Phase 3. It is repeated once Phase 5 has changed the
+  agent again.
 
 ---
 

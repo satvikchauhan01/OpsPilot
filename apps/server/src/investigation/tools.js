@@ -6,6 +6,7 @@ import { compare } from './health.js';
 
 // A tool result bigger than this gets its longest lists trimmed before the model sees it.
 const MAX_RESULT_CHARS = 7000;
+const MAX_RUNBOOK_TEXT = 900;
 const SERVICE_NAME = /^[a-z0-9][a-z0-9-]{0,62}$/;
 const TRACE_ID = /^[0-9a-f]{16,32}$/i;
 const NOISY_LABELS = new Set(['__name__', 'instance', 'job']);
@@ -15,7 +16,7 @@ const NOISY_LABELS = new Set(['__name__', 'instance', 'job']);
  * investigation looks at, which is the present for a live incident and the resolution time
  * for one looked at after the fact.
  */
-export function createTools({ prometheus, loki, tempo, kube, namespace, anchor, incidentStart }) {
+export function createTools({ prometheus, loki, tempo, kube, namespace, knowledge, incident, anchor, incidentStart }) {
   const before = (minutes) => new Date(anchor.getTime() - minutes * 60_000);
   const serviceArg = { type: 'string', description: 'Service name, e.g. checkout' };
 
@@ -334,6 +335,65 @@ export function createTools({ prometheus, loki, tempo, kube, namespace, anchor, 
           others: found
             .slice(3)
             .map((trace) => ({ traceId: trace.traceId, root: trace.rootName, durationMs: trace.durationMs })),
+        };
+      },
+    },
+
+    {
+      name: 'find_similar_incidents',
+      description:
+        'Past resolved incidents that looked like this one, with how similar they are (0 to 1), their root cause and what fixed them. They are hints: the same symptoms can have a different cause this time.',
+      parameters: { type: 'object', properties: {} },
+      title: () => 'Similar past incidents',
+      async run() {
+        const found = await knowledge.memory.similar(incident, { withRootCause: false });
+        return {
+          incidents: found.map((past) => ({
+            number: past.number,
+            title: past.title,
+            similarity: round(past.similarity),
+            startedAt: past.startedAt,
+            rootCause: past.rootCause
+              ? `${past.rootCause.causeType} in ${past.rootCause.service}: ${past.rootCause.title}`
+              : 'never investigated',
+            fixedBy: past.fix?.summary,
+          })),
+          ...(found.length === 0 && { note: 'no similar incidents in memory' }),
+        };
+      },
+    },
+
+    {
+      name: 'search_runbooks',
+      description:
+        "Search the team's runbooks by meaning. Returns the closest sections with their similarity (0 to 1): how to recognise, confirm and fix a kind of problem, and which fix to use.",
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'What you need guidance on, e.g. "memory rising with flat traffic"' },
+          service: { ...serviceArg, description: 'Only runbooks that cover this service (optional).' },
+        },
+        required: ['query'],
+      },
+      title: ({ query = '' }) => {
+        const flat = query.replace(/\s+/g, ' ').trim();
+        return `Runbooks about "${flat.length > 90 ? `${flat.slice(0, 90)}…` : flat}"`;
+      },
+      async run({ query, service }) {
+        // The opening search passes a whole incident description; the embedding model reads
+        // about this much of it anyway.
+        if (!query || query.length > 1000) return { error: 'the query must be between 1 and 1000 characters' };
+        if (service && !SERVICE_NAME.test(service)) return { error: 'service must be a service name like checkout' };
+        const sections = await knowledge.runbooks.search(query, { limit: 4, service });
+        return {
+          sections: sections.map(({ slug, anchor, title, heading, similarity, text }) => ({
+            runbook: title,
+            section: heading,
+            slug,
+            anchor,
+            similarity: round(similarity),
+            text: text.length > MAX_RUNBOOK_TEXT ? `${text.slice(0, MAX_RUNBOOK_TEXT)}…` : text,
+          })),
         };
       },
     },

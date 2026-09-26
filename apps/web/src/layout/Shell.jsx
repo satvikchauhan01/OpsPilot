@@ -36,6 +36,7 @@ export function Shell() {
   useHotkeys({
     'g o': () => navigate('/'),
     'g i': () => navigate('/incidents'),
+    'g r': () => navigate('/runbooks'),
     t: toggle,
     '?': () => setHelpOpen(true),
   });
@@ -57,6 +58,9 @@ export function Shell() {
           </NavLink>
           <NavLink to="/incidents" className={styles.navLink}>
             Incidents
+          </NavLink>
+          <NavLink to="/runbooks" className={styles.navLink}>
+            Runbooks
           </NavLink>
         </nav>
 

@@ -22,7 +22,7 @@ const statusChange = z.object({
   note: z.string().trim().max(500).optional(),
 });
 
-export function incidentsRouter({ incidents, investigations, prometheus, config }) {
+export function incidentsRouter({ incidents, investigations, runbooks, memory, prometheus, config }) {
   const router = Router();
   const number = (req) => parse(incidentNumber, req.params.number);
 
@@ -59,6 +59,18 @@ export function incidentsRouter({ incidents, investigations, prometheus, config 
   router.get('/:number/metrics', async (req, res) => {
     const incident = await incidents.findByNumber(number(req));
     res.json(await incidentMetrics(prometheus, config.kube.namespace, incident));
+  });
+
+  // The runbook sections that best match what the incident looks like
+  router.get('/:number/runbooks', async (req, res) => {
+    const incident = await incidents.findByNumber(number(req));
+    res.json(await runbooks.forIncident(incident));
+  });
+
+  // Resolved incidents from before this one that looked like it, with what fixed them
+  router.get('/:number/similar', async (req, res) => {
+    const incident = await incidents.findByNumber(number(req));
+    res.json(await memory.similar(incident));
   });
 
   router.post('/:number/status', requireRole('responder'), async (req, res) => {

@@ -42,6 +42,13 @@ export const api = {
   setIncidentStatus: (number, status, note) =>
     request(`/incidents/${number}/status`, { method: 'POST', body: { status, note: note || undefined } }),
 
+  incidentRunbooks: (number) => request(`/incidents/${number}/runbooks`),
+  similarIncidents: (number) => request(`/incidents/${number}/similar`),
+
+  runbooks: () => request('/runbooks'),
+  runbook: (slug) => request(`/runbooks/${encodeURIComponent(slug)}`),
+  searchRunbooks: (q) => request(`/runbooks/search${query({ q, limit: 10 })}`),
+
   aiStatus: () => request('/ai'),
   investigation: (number, id = 'latest') => request(`/incidents/${number}/investigations/${id}`),
   startInvestigation: (number) => request(`/incidents/${number}/investigations`, { method: 'POST' }),

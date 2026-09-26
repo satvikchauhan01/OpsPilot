@@ -13,6 +13,7 @@ import { topologyRouter } from './topology/routes.js';
 import { changesRouter } from './changes/routes.js';
 import { streamRouter } from './realtime/stream.js';
 import { aiStatusRouter, investigationsRouter } from './investigation/routes.js';
+import { runbooksRouter } from './knowledge/routes.js';
 
 export function createApp(context) {
   const app = express();
@@ -41,6 +42,7 @@ export function createApp(context) {
   app.use('/api/services', servicesRouter(context));
   app.use('/api/topology', topologyRouter(context));
   app.use('/api/changes', changesRouter(context));
+  app.use('/api/runbooks', runbooksRouter(context));
   app.use('/api/users', usersRouter(context));
 
   app.use('/api', handleApiNotFound);

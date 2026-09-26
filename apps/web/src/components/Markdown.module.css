@@ -1,0 +1,67 @@
+.markdown {
+  display: grid;
+  gap: var(--space-3);
+  line-height: 1.65;
+  max-width: 72ch;
+}
+
+.markdown :where(p, ul, ol, pre, table) {
+  margin: 0;
+}
+
+.markdown :where(ul, ol) {
+  display: grid;
+  gap: 4px;
+  padding-left: 1.3em;
+}
+
+.markdown li::marker {
+  color: var(--ink-3);
+}
+
+.markdown strong {
+  font-weight: 600;
+}
+
+.markdown :where(h4, h5) {
+  margin: var(--space-2) 0 0;
+  font-size: 14px;
+}
+
+.markdown :not(pre) > code {
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  font: 400 0.9em var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.markdown pre {
+  max-width: 100%;
+  padding: var(--space-3) var(--space-4);
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  font: 400 12.5px/1.6 var(--font-mono);
+}
+
+.markdown pre code {
+  font: inherit;
+}
+
+.markdown table {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.markdown :where(th, td) {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.markdown a {
+  text-underline-offset: 2px;
+}

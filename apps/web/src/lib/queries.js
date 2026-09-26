@@ -50,6 +50,44 @@ export function useIncidentMetrics(number, live) {
   });
 }
 
+// Both are recomputed by the server from the incident's alerts, changes and root cause, and
+// refreshed by live events when those change.
+export function useIncidentRunbooks(number) {
+  return useQuery({ queryKey: ['incident-runbooks', number], queryFn: () => api.incidentRunbooks(number) });
+}
+
+export function useSimilarIncidents(number) {
+  return useQuery({ queryKey: ['similar-incidents', number], queryFn: () => api.similarIncidents(number) });
+}
+
+// Runbooks only change when the server restarts with edited files.
+const RUNBOOK_STALE_MS = 5 * 60_000;
+
+export function useRunbooks() {
+  return useQuery({ queryKey: ['runbooks'], queryFn: api.runbooks, staleTime: RUNBOOK_STALE_MS });
+}
+
+export function useRunbook(slug) {
+  return useQuery({
+    queryKey: ['runbook', slug],
+    queryFn: () => api.runbook(slug),
+    enabled: Boolean(slug),
+    staleTime: RUNBOOK_STALE_MS,
+  });
+}
+
+// Keeps showing the previous results while the next search is on its way.
+export function useRunbookSearch(text) {
+  const q = text.trim();
+  return useQuery({
+    queryKey: ['runbook-search', q],
+    queryFn: () => api.searchRunbooks(q),
+    enabled: q.length >= 2,
+    placeholderData: (previous) => previous,
+    staleTime: RUNBOOK_STALE_MS,
+  });
+}
+
 export function useAiStatus() {
   return useQuery({ queryKey: ['ai-status'], queryFn: api.aiStatus, staleTime: 60_000 });
 }

@@ -15,12 +15,18 @@ export const LIMITS = {
   tokens: 400_000,
 };
 
-// Always gathered first, so the model starts from the same basic picture a human would.
-const OPENING_TOOLS = [
-  ['get_service_health', {}],
-  ['get_call_graph', {}],
-  ['list_changes', { minutes: 60 }],
-];
+// Always gathered first, so the model starts from the same picture a human would: how the
+// services are doing, what changed, whether this happened before, and what the runbooks say
+// about an incident that looks like this one.
+function openingTools(runbookQuery) {
+  return [
+    ['get_service_health', {}],
+    ['get_call_graph', {}],
+    ['list_changes', { minutes: 60 }],
+    ['find_similar_incidents', {}],
+    ['search_runbooks', { query: runbookQuery }],
+  ];
+}
 
 const SUBMIT = {
   name: 'submit_findings',
@@ -32,10 +38,10 @@ const SUBMIT = {
  * Runs one investigation to completion and stores every step as it happens.
  * `investigation` is a queued Investigation document for `incident`.
  */
-export async function runInvestigation({ investigation, incident, llm, telemetry, services }) {
+export async function runInvestigation({ investigation, incident, llm, telemetry, knowledge, services }) {
   const started = Date.now();
   const anchor = incident.status === 'resolved' && incident.resolvedAt ? incident.resolvedAt : new Date();
-  const tools = createTools({ ...telemetry, anchor, incidentStart: incident.startedAt });
+  const tools = createTools({ ...telemetry, knowledge, incident, anchor, incidentStart: incident.startedAt });
   const run = createRecorder(investigation);
 
   try {
@@ -64,22 +70,23 @@ export async function runInvestigation({ investigation, incident, llm, telemetry
       evidenceId: 'E1',
     });
 
-    // One after another, so the opening evidence always gets the same ids (E2, E3, E4).
-    for (const [name, args] of OPENING_TOOLS) await runTool(run, tools, name, args, 'context');
+    // One after another, so the opening evidence always gets the same ids (E2 to E6).
+    const opening = openingTools(await knowledge.runbooks.openingQuery(incident));
+    for (const [name, args] of opening) await runTool(run, tools, name, args, 'context');
 
     // The briefing plus every piece of evidence gathered so far.
-    const opening = () => ({
+    const firstMessage = () => ({
       role: 'user',
       parts: [
         { text: briefing({ incident, alerts, heuristicSuspect: incident.suspectedService, now: anchor }) },
         { text: formatEvidence(run.evidence()) },
       ],
     });
-    const contents = [opening()];
+    const contents = [firstMessage()];
     const system = systemPrompt({ services, maxToolCalls: LIMITS.toolCalls });
     let model = llm.pickModel();
     if (model !== llm.model) await run.update({ model });
-    let toolCalls = OPENING_TOOLS.length;
+    let toolCalls = opening.length;
     let invalidSubmissions = 0;
 
     for (let turn = 1; turn <= LIMITS.turns; turn += 1) {
@@ -106,7 +113,7 @@ export async function runInvestigation({ investigation, incident, llm, telemetry
         await run.step({ kind: 'note', title: `${model} is unavailable, handing over to ${llm.fallbackModel}` });
         model = llm.fallbackModel;
         await run.update({ model });
-        contents.splice(0, contents.length, opening());
+        contents.splice(0, contents.length, firstMessage());
         reply = await llm.generate({ ...request, model });
       }
       await run.countUsage(reply.usage);
@@ -175,8 +182,8 @@ function formatEvidence(evidence) {
 }
 
 // Persists the investigation as it progresses and tells browsers about every change.
-// Saves go through a queue because the opening tools run in parallel, and Mongoose refuses
-// to save one document twice at the same time.
+// Saves go through a queue so two updates never save the document at the same moment,
+// which Mongoose refuses.
 function createRecorder(investigation) {
   const doc = investigation;
   const enqueue = createSerialQueue();

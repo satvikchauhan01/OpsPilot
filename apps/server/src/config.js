@@ -33,6 +33,8 @@ const schema = z.object({
   KUBE_CONTEXT: z.string().optional(),
   MONITORED_NAMESPACE: z.string().default('shop'),
 
+  RUNBOOKS_DIR: z.string().optional(),
+
   CORRELATION_WINDOW_MINUTES: z.coerce.number().positive().default(5),
   AUTO_RESOLVE_MINUTES: z.coerce.number().positive().default(5),
 
@@ -77,6 +79,7 @@ export const config = {
     alertmanager: env.ALERTMANAGER_URL,
   },
   kube: { context: env.KUBE_CONTEXT, namespace: env.MONITORED_NAMESPACE },
+  runbooksDir: env.RUNBOOKS_DIR ?? path.join(ROOT, 'runbooks'),
   correlationWindowMs: env.CORRELATION_WINDOW_MINUTES * 60_000,
   autoResolveMs: env.AUTO_RESOLVE_MINUTES * 60_000,
   llm: {

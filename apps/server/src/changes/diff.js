@@ -28,7 +28,7 @@ export function diffDeployments(name, before, after) {
   if (before.replicas !== after.replicas) {
     changes.push({
       kind: 'scale',
-      summary: `${name} scaled from ${before.replicas} to ${after.replicas} replicas`,
+      summary: scaleSummary(name, before.replicas, after.replicas),
       details: { from: before.replicas, to: after.replicas },
     });
   }
@@ -40,7 +40,7 @@ export function diffDeployments(name, before, after) {
     if (previous.image !== container.image) {
       changes.push({
         kind: 'deploy',
-        summary: `${name} ${imageVersion(previous.image)} → ${imageVersion(container.image)}`,
+        summary: deploySummary(name, previous.image, container.image),
         details: {
           container: container.name,
           from: previous.image,
@@ -74,6 +74,44 @@ export function diffDeployments(name, before, after) {
   }
 
   return changes;
+}
+
+/**
+ * What a run of changes adds up to, per service: a release that was rolled back again, or a
+ * scale-up that was undone, cancels out, and a chain of them collapses into one. Settings
+ * changes and restarts are kept as they are. `changes` must be in time order.
+ */
+export function netChanges(changes) {
+  const kept = [];
+  const chains = new Map();
+  for (const change of changes) {
+    if (change.kind !== 'deploy' && change.kind !== 'scale') {
+      kept.push(change);
+      continue;
+    }
+    const key = `${change.kind} ${change.service}`;
+    const chain = chains.get(key);
+    if (chain) chain.last = change;
+    else chains.set(key, { first: change, last: change });
+  }
+
+  for (const { first, last } of chains.values()) {
+    const from = first.details.from;
+    const to = last.details.to;
+    if (from === to) continue;
+    const summary =
+      last.kind === 'deploy' ? deploySummary(last.service, from, to) : scaleSummary(last.service, from, to);
+    kept.push({ ...last, summary, details: { ...last.details, from } });
+  }
+  return kept.sort((a, b) => a.at - b.at);
+}
+
+function deploySummary(name, fromImage, toImage) {
+  return `${name} ${imageVersion(fromImage)} → ${imageVersion(toImage)}`;
+}
+
+function scaleSummary(name, from, to) {
+  return `${name} scaled from ${from} to ${to} replicas`;
 }
 
 // "shop.local/checkout:1.4.2" -> "1.4.2". A registry port ("host:5000/x") is not a tag.

@@ -8,7 +8,7 @@ import { runInvestigation } from './investigator.js';
 
 const FALLBACK_SERVICES = ['checkout', 'gateway', 'inventory', 'payments'];
 
-export function createInvestigationService({ llm, telemetry, incidents, topology, tracker, config }) {
+export function createInvestigationService({ llm, telemetry, knowledge, incidents, topology, tracker, config }) {
   // One investigation at a time: they share one rate-limited model quota.
   const enqueue = createSerialQueue();
 
@@ -48,7 +48,14 @@ export function createInvestigationService({ llm, telemetry, incidents, topology
           note: 'automatic investigation started',
         });
       }
-      await runInvestigation({ investigation, incident: current, llm, telemetry, services: knownServices() });
+      await runInvestigation({
+        investigation,
+        incident: current,
+        llm,
+        telemetry,
+        knowledge,
+        services: knownServices(),
+      });
     }).catch((err) => logger.error({ err, incident: number }, 'investigation crashed'));
 
     return investigation;

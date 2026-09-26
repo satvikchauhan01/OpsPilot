@@ -1,31 +1,15 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { canRespond, useAuth } from '../auth/AuthContext.jsx';
 import { useAiStatus, useInvestigation, useStartInvestigation } from '../lib/queries.js';
-import { clock, duration } from '../lib/format.js';
+import { clock, duration, incidentId } from '../lib/format.js';
+import { ACTION_LABEL, CAUSE_LABEL } from '../lib/labels.js';
 import { useNow } from '../hooks/useNow.js';
 import { Panel } from '../components/Panel.jsx';
+import { Score } from '../components/Score.jsx';
 import { Empty, QueryState } from '../components/States.jsx';
 import { ServiceChip } from '../components/Tags.jsx';
 import styles from './InvestigationPanel.module.css';
-
-const CAUSE_LABEL = {
-  bad_deploy: 'Bad deploy',
-  config_change: 'Config change',
-  memory_leak: 'Memory leak',
-  resource_saturation: 'Saturation',
-  traffic_surge: 'Traffic surge',
-  slow_dependency: 'Slow dependency',
-  crash_loop: 'Crash loop',
-  unknown: 'Unknown',
-};
-
-const ACTION_LABEL = {
-  rollback: 'Roll back',
-  restart: 'Restart',
-  scale_up: 'Scale up',
-  investigate: 'Keep investigating',
-  none: 'No action',
-};
 
 const STATUS_LABEL = { queued: 'Queued', running: 'Investigating', completed: 'Done', failed: 'Failed' };
 
@@ -146,7 +130,7 @@ function Findings({ result, evidence, openEvidence, onOpen }) {
                   <span className={styles.action}>Suggests: {ACTION_LABEL[hypothesis.suggestedAction]}</span>
                 </div>
               </div>
-              <Confidence value={hypothesis.confidence} />
+              <Score value={hypothesis.confidence} label="Confidence" size="large" />
             </div>
             <p className={styles.reasoning}>{hypothesis.reasoning}</p>
             <ul className={styles.evidenceList}>
@@ -172,26 +156,41 @@ function Findings({ result, evidence, openEvidence, onOpen }) {
   );
 }
 
-function Confidence({ value }) {
-  const percent = Math.round(value * 100);
-  return (
-    <span className={styles.confidence}>
-      <span className={styles.confidenceValue}>{percent}%</span>
-      <span
-        className={styles.confidenceTrack}
-        role="meter"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percent}
-        aria-label="Confidence"
-      >
-        <span style={{ width: `${percent}%` }} />
-      </span>
-    </span>
-  );
-}
+// Evidence from the knowledge tools reads better as links than as JSON. The exact result is
+// still one click away.
+const EVIDENCE_VIEWS = {
+  search_runbooks: ({ result }) => (
+    <ul className={styles.evidenceLinks}>
+      {result.sections.map((section) => (
+        <li key={`${section.slug}#${section.anchor}`}>
+          <Link to={`/runbooks/${section.slug}#${section.anchor}`}>
+            {section.runbook} › {section.section}
+          </Link>
+          <span className="mono">{Math.round(section.similarity * 100)}%</span>
+        </li>
+      ))}
+    </ul>
+  ),
+  find_similar_incidents: ({ result }) =>
+    result.incidents.length === 0 ? (
+      <p className={styles.muted}>No similar incidents in memory yet.</p>
+    ) : (
+      <ul className={styles.evidenceLinks}>
+        {result.incidents.map((past) => (
+          <li key={past.number}>
+            <Link to={`/incidents/${past.number}`}>
+              {incidentId(past.number)} {past.title}
+            </Link>
+            <span className="mono">{Math.round(past.similarity * 100)}%</span>
+          </li>
+        ))}
+      </ul>
+    ),
+};
 
 function EvidenceDetail({ item, onClose }) {
+  const View = item.result?.error ? null : EVIDENCE_VIEWS[item.tool];
+  const json = <pre className={styles.json}>{JSON.stringify(item.result, null, 2)}</pre>;
   return (
     <section className={styles.evidenceDetail} aria-label={`Evidence ${item.id}`}>
       <header>
@@ -210,7 +209,17 @@ function EvidenceDetail({ item, onClose }) {
           </>
         )}
       </p>
-      <pre className={styles.json}>{JSON.stringify(item.result, null, 2)}</pre>
+      {View ? (
+        <>
+          <View result={item.result} />
+          <details className={styles.raw}>
+            <summary>Exact result</summary>
+            {json}
+          </details>
+        </>
+      ) : (
+        json
+      )}
     </section>
   );
 }

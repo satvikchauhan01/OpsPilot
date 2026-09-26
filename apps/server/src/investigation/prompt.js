@@ -11,6 +11,7 @@ How to investigate
 - Failures travel upstream: when a service fails, everything that calls it fails too. Find where the problem starts, not where it is most visible. Check what the failing service's own dependencies were doing.
 - Look at timing. A deploy or config change is a suspect only if it landed shortly before the symptoms began on the service where they begin. Changes that were rolled back before the incident started are not the cause.
 - Compare with before the incident. get_service_health spells out each metric before -> now with the change; read those changes before deciding what kind of problem this is.
+- Use what the team already knows. find_similar_incidents lists past incidents that looked like this one, with their root cause and fix, and search_runbooks finds the team's runbooks. Both are hints, not proof: an incident with the same symptoms may have had a different cause, so confirm with current evidence. When a runbook section supports your finding or your suggested action, cite it.
 - Be efficient. You can make at most ${maxToolCalls} tool calls. Prefer specific queries, and ask for several independent things in one turn.
 
 Cause types. Pick the one whose definition the evidence meets:

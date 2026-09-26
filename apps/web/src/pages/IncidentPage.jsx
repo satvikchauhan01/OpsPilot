@@ -10,6 +10,8 @@ import { BlastRadiusPanel } from '../incident/BlastRadiusPanel.jsx';
 import { Timeline } from '../incident/Timeline.jsx';
 import { AlertsTable } from '../incident/AlertsTable.jsx';
 import { InvestigationPanel } from '../incident/InvestigationPanel.jsx';
+import { SimilarIncidentsPanel } from '../incident/SimilarIncidentsPanel.jsx';
+import { RunbooksPanel } from '../incident/RunbooksPanel.jsx';
 import styles from './IncidentPage.module.css';
 
 export function IncidentPage() {
@@ -36,6 +38,10 @@ export function IncidentPage() {
           <div className={styles.main}>
             <SignalsPanel metrics={metrics} incident={incident.data} changes={changes} now={now} />
             <BlastRadiusPanel topology={topology} />
+            <div className={styles.knowledge}>
+              <SimilarIncidentsPanel number={number} />
+              <RunbooksPanel number={number} />
+            </div>
             <Panel title="Alerts" meta={`${incident.data.alerts.length} in this incident`} flush>
               <AlertsTable alerts={incident.data.alerts} now={now} />
             </Panel>

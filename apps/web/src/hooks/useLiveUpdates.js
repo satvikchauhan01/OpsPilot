@@ -18,10 +18,22 @@ export function useLiveUpdates(onEvent) {
     const handlers = {
       'incident.created': () => refresh(['incidents'], ['services']),
       'incident.updated': (incident) =>
-        refresh(['incidents'], ['services'], ['incident', incident.number], ['timeline', incident.number]),
+        refresh(
+          ['incidents'],
+          ['services'],
+          ['incident', incident.number],
+          ['timeline', incident.number],
+          ['incident-runbooks', incident.number],
+          ['similar-incidents', incident.number],
+        ),
       change: () => refresh(['changes'], ['timeline']),
-      'investigation.updated': (investigation) =>
-        refresh(['investigation', investigation.incidentNumber], ['timeline', investigation.incidentNumber]),
+      'investigation.updated': ({ incidentNumber, status }) => {
+        refresh(['investigation', incidentNumber], ['timeline', incidentNumber]);
+        // A finished investigation adds a root cause, which sharpens both searches.
+        if (status === 'completed') {
+          refresh(['incident-runbooks', incidentNumber], ['similar-incidents', incidentNumber]);
+        }
+      },
     };
 
     for (const [type, handle] of Object.entries(handlers)) {

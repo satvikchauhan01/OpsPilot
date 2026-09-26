@@ -1,10 +1,12 @@
 // Measures how often OpsPilot's AI investigation names the right root cause (REQUIREMENTS.md, AI-6).
 // Each run breaks the shop in a known way, waits for the incident and its automatic
 // investigation, scores the top hypothesis, then puts everything back before the next run.
-// Results go to docs/evaluation.md.
+// Results go to docs/evaluation.md, or wherever --report points, so a quick check doesn't
+// replace the full evaluation.
 //
 //   npm run evaluate                       every scenario, 5 runs each
 //   npm run evaluate -- --runs 2 --only bad-deploy,memory-leak
+//   npm run evaluate -- --runs 1 --report quick-check.md
 //
 // Needs the local cluster (npm run cluster:up) and the server (npm run dev), and signs in
 // with ADMIN_EMAIL / ADMIN_PASSWORD from .env.
@@ -32,10 +34,12 @@ const { values: options } = parseArgs({
   options: {
     runs: { type: 'string', default: '5' },
     only: { type: 'string' },
+    report: { type: 'string', default: path.join(ROOT, 'docs', 'evaluation.md') },
   },
 });
 const runsPerScenario = Number(options.runs);
 const scenarios = options.only ? options.only.split(',') : Object.keys(EXPECTED);
+const reportPath = path.resolve(options.report);
 
 try {
   process.loadEnvFile(path.join(ROOT, '.env'));
@@ -45,6 +49,10 @@ try {
 
 const session = await signIn();
 const results = [];
+
+// Start from a clean slate: an incident still open from earlier would take in the first run's
+// alerts instead of letting them open a new one.
+await cleanUp();
 
 for (const scenario of scenarios) {
   for (let attempt = 1; attempt <= runsPerScenario; attempt += 1) {
@@ -57,7 +65,7 @@ for (const scenario of scenarios) {
   }
 }
 
-console.log(`\nDone. ${results.filter((r) => r.correct).length}/${results.length} correct. See docs/evaluation.md`);
+console.log(`\nDone. ${results.filter((r) => r.correct).length}/${results.length} correct. See ${reportPath}`);
 
 async function evaluateOnce(scenario) {
   await settle();
@@ -200,5 +208,5 @@ function writeReport(rows) {
     }),
     '',
   ];
-  writeFileSync(path.join(ROOT, 'docs', 'evaluation.md'), lines.join('\n'));
+  writeFileSync(reportPath, lines.join('\n'));
 }
