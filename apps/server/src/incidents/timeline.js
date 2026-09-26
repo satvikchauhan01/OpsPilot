@@ -1,3 +1,5 @@
+import { describeAction, describeDone } from '../remediation/catalog.js';
+
 // Merges everything known about an incident into one chronological list for the UI and
 // for the investigator.
 
@@ -17,7 +19,7 @@ const ORDER = ['change', 'k8s', 'alert', 'incident', 'investigation', 'action'];
 // Repeats of the same warning on the same service this close together become one entry.
 const REPEAT_WINDOW_MS = 3 * 60_000;
 
-export function buildTimeline({ incident, alerts = [], changes = [], investigations = [] }) {
+export function buildTimeline({ incident, alerts = [], changes = [], investigations = [], actions = [] }) {
   const entries = [];
 
   for (const alert of alerts) {
@@ -94,8 +96,73 @@ export function buildTimeline({ incident, alerts = [], changes = [], investigati
     }
   }
 
+  for (const action of actions) entries.push(...actionEntries(action));
+
   entries.sort((a, b) => a.at - b.at || ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
   return collapseRepeatedWarnings(entries);
+}
+
+// A fix appears when it was proposed, decided on, rolled out, and verified or failed.
+// Proposals nobody decided on before they were replaced or cancelled are left out.
+function actionEntries(action) {
+  if (action.status === 'superseded' || action.status === 'cancelled') return [];
+
+  const id = `action-${action._id ?? action.id}`;
+  const base = { kind: 'action', service: action.params.service };
+  const label = describeAction(action);
+  const entries = [
+    {
+      ...base,
+      id: `${id}-proposed`,
+      at: new Date(action.proposedAt),
+      title: `Proposed: ${label}`,
+      detail: action.reason,
+      by: action.proposedBy,
+      tone: 'neutral',
+    },
+  ];
+
+  if (action.decidedAt) {
+    const rejected = action.status === 'rejected';
+    entries.push({
+      ...base,
+      id: `${id}-decided`,
+      at: new Date(action.decidedAt),
+      title: `${rejected ? 'Rejected' : 'Approved'}: ${label}`,
+      detail: rejected ? action.rejectionReason : undefined,
+      by: action.decidedBy,
+      tone: rejected ? 'neutral' : 'info',
+    });
+  }
+  if (action.rolledOutAt) {
+    entries.push({
+      ...base,
+      id: `${id}-done`,
+      at: new Date(action.rolledOutAt),
+      title: describeDone(action),
+      tone: 'info',
+    });
+  }
+  if (action.status === 'verified') {
+    entries.push({
+      ...base,
+      id: `${id}-verified`,
+      at: new Date(action.finishedAt),
+      title: 'Fix verified: the metrics are back within their limits',
+      tone: 'ok',
+    });
+  }
+  if (action.status === 'failed') {
+    entries.push({
+      ...base,
+      id: `${id}-failed`,
+      at: new Date(action.finishedAt),
+      title: `Fix failed: ${label}`,
+      detail: action.error,
+      tone: 'critical',
+    });
+  }
+  return entries;
 }
 
 function collapseRepeatedWarnings(entries) {

@@ -3,7 +3,9 @@ owner: Shop platform team
 services: [gateway, checkout, payments, inventory]
 alerts: [ReplicasUnavailable, TargetDown]
 causes: [bad_deploy, config_change, crash_loop]
-actions: [rollback, restart]
+actions:
+  rollback: Fix by cause
+  restart: Fix by cause
 ---
 
 # Replicas unavailable or rollout stuck

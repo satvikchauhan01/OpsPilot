@@ -25,7 +25,9 @@ Cause types. Pick the one whose definition the evidence meets:
 - unknown: none of the above fits the evidence.
 
 When you are confident, or out of calls, call submit_findings with up to three hypotheses, most likely first.
-Suggested actions: rollback (a bad release), restart (a stuck or leaking process), scale_up (not enough capacity), investigate, none.`;
+Suggested actions: rollback (a bad release), restart (a stuck or leaking process), scale_up (not enough capacity), investigate, none.
+With scale_up, also give replicas: how many the service should run in total (at most 6), sized from the load in the evidence.
+Your suggestion becomes a proposed fix that an engineer approves or rejects, so suggest the one action that fixes the root cause.`;
 }
 
 export function briefing({ incident, alerts, heuristicSuspect, now }) {

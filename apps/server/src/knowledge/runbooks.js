@@ -13,7 +13,7 @@ import { incidentDescription } from './context.js';
 const INDEX = 'runbook_chunks';
 // Part of every runbook's fingerprint. Bump it when chunking or embedding changes, and every
 // runbook gets indexed again on the next start.
-const INDEX_VERSION = 3;
+const INDEX_VERSION = 4;
 
 export function createRunbookService({ dir, namespace }) {
   let ready = false;
@@ -124,5 +124,19 @@ export function createRunbookService({ dir, namespace }) {
     return search(text, { limit: 5 });
   }
 
-  return { sync, list, get, search, openingQuery, forIncident };
+  // The runbooks written for a cause that recommend a fix, the best match for the incident
+  // first. Each lists its fixes with the section that explains them.
+  async function fixesFor(incident, causeType) {
+    const candidates = await Runbook.find(
+      { causes: causeType, 'actions.0': { $exists: true } },
+      '-_id slug title actions',
+    ).lean();
+    if (candidates.length < 2) return candidates;
+
+    const ranked = [...new Set((await forIncident(incident).catch(() => [])).map((hit) => hit.slug))];
+    const rank = (slug) => (ranked.includes(slug) ? ranked.indexOf(slug) : ranked.length);
+    return candidates.sort((a, b) => rank(a.slug) - rank(b.slug));
+  }
+
+  return { sync, list, get, search, openingQuery, forIncident, fixesFor };
 }

@@ -1,0 +1,47 @@
+# The identity OpsPilot uses to run approved fixes. It can read and patch Deployments in the
+# shop namespace (a patch is how rollback, restart and scale are done) and nothing else: no
+# pods, no secrets, no deletes, no other namespace. Everything OpsPilot only reads uses its
+# own, separate credentials.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opspilot-executor
+  namespace: shop
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: opspilot-executor
+  namespace: shop
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, list, watch, patch]
+  - apiGroups: [apps]
+    resources: [deployments/scale]
+    verbs: [get, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: opspilot-executor
+  namespace: shop
+subjects:
+  - kind: ServiceAccount
+    name: opspilot-executor
+    namespace: shop
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: opspilot-executor
+---
+# A long-lived token for the service account. Kubernetes fills in the token itself;
+# scripts/cluster.mjs copies it into .env as KUBE_EXECUTOR_TOKEN.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opspilot-executor-token
+  namespace: shop
+  annotations:
+    kubernetes.io/service-account.name: opspilot-executor
+type: kubernetes.io/service-account-token

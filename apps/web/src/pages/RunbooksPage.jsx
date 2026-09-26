@@ -191,7 +191,11 @@ function RunbookDocument({ slug, anchor }) {
                 <dt>Recommends</dt>
                 <dd>
                   {doc.actions.length > 0
-                    ? doc.actions.map((action) => ACTION_LABEL[action]).join(', ')
+                    ? doc.actions.map(({ action, anchor }) => (
+                        <Link key={action} to={`#${anchor}`}>
+                          {ACTION_LABEL[action]}
+                        </Link>
+                      ))
                     : 'no fix of its own, it is for diagnosis'}
                 </dd>
               </div>

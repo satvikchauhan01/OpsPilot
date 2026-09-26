@@ -7,6 +7,7 @@ import { createSerialQueue } from '../lib/serial-queue.js';
 import { runInvestigation } from './investigator.js';
 
 const FALLBACK_SERVICES = ['checkout', 'gateway', 'inventory', 'payments'];
+const CATCH_UP_EVERY_MS = 60_000;
 
 export function createInvestigationService({ llm, telemetry, knowledge, incidents, topology, tracker, config }) {
   // One investigation at a time: they share one rate-limited model quota.
@@ -61,18 +62,35 @@ export function createInvestigationService({ llm, telemetry, knowledge, incident
     return investigation;
   }
 
+  function startAutomatically(number) {
+    return start(number, { trigger: 'auto' }).catch((err) =>
+      logger.warn({ incident: number, err: err.message }, 'could not start the automatic investigation'),
+    );
+  }
+
   // Every new incident is investigated automatically. The short wait lets related alerts
   // join the incident and gives the telemetry time to show the problem.
   function investigateNewIncidents() {
     if (!llm) return;
     bus.on('event', ({ type, data }) => {
-      if (type !== 'incident.created') return;
-      setTimeout(() => {
-        start(data.number, { trigger: 'auto' }).catch((err) =>
-          logger.warn({ incident: data.number, err: err.message }, 'could not start the automatic investigation'),
-        );
-      }, config.llm.investigationDelayMs);
+      if (type === 'incident.created')
+        setTimeout(() => startAutomatically(data.number), config.llm.investigationDelayMs);
     });
+
+    // A start can still be lost: the database was unreachable at that moment, or the server
+    // restarted during the wait. Open incidents that have gone well past the wait without any
+    // investigation are picked up here, so none stays uninvestigated for good.
+    setInterval(() => {
+      catchUp().catch((err) => logger.warn({ err: err.message }, 'could not look for uninvestigated incidents'));
+    }, CATCH_UP_EVERY_MS).unref();
+  }
+
+  async function catchUp() {
+    const overdue = new Date(Date.now() - 2 * config.llm.investigationDelayMs - CATCH_UP_EVERY_MS);
+    const waiting = await Incident.find({ status: 'open', createdAt: { $lte: overdue } }, 'number').lean();
+    for (const { _id, number } of waiting) {
+      if (!(await Investigation.exists({ incident: _id }))) await startAutomatically(number);
+    }
   }
 
   // Any investigation still marked running after a restart was cut off halfway.

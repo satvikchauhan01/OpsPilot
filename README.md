@@ -4,10 +4,10 @@ An AI incident-response copilot for Kubernetes. OpsPilot watches a running syste
 alerts into incidents. It works out what changed and why things broke, then proposes a fix.
 Once a human approves, it runs the fix, checks that it worked, and writes the postmortem.
 
-> **Status: Phase 4 of 6.** Alerts become incidents with a timeline, a blast radius and a
-> live AI investigation that cites its evidence, the team's runbooks and similar past
-> incidents. See the [roadmap](docs/ROADMAP.md) for what comes next, and the
-> [requirements](docs/REQUIREMENTS.md) for the full scope.
+> **Status: Phase 5 of 6.** Alerts become incidents with a timeline, a blast radius and a
+> live AI investigation. OpsPilot proposes the fix, runs it once a responder approves, and
+> verifies it against the incident's metrics. See the [roadmap](docs/ROADMAP.md) for what
+> comes next, and the [requirements](docs/REQUIREMENTS.md) for the full scope.
 
 ## What it does today
 
@@ -23,9 +23,15 @@ Once a human approves, it runs the fix, checks that it worked, and writes the po
    incident are embedded locally (transformers.js) and searched by meaning with Atlas Vector
    Search. Each incident shows the closest runbook sections and similar past incidents with
    what fixed them, and the agent reads both as evidence.
-5. **Shows it live.** A React console streams all of this as it happens: charts synced with
-   the timeline, an interactive dependency map, the investigation step by step, and a
-   searchable runbook library.
+5. **Fixes, with approval.** From the root cause it proposes one of three actions (roll back,
+   rolling restart, scale to 1–6 replicas) with the reason and the runbook section behind
+   it. Nothing runs until a responder approves. The fix then runs as a service account that
+   can only read and patch Deployments in the shop's namespace. Afterwards OpsPilot watches the
+   incident's error rate, latency, memory and saturation for three minutes before calling it
+   verified. Every step lands in an append-only audit log whose records are chained by hash.
+6. **Shows it live.** A React console streams all of this as it happens: charts synced with
+   the timeline, an interactive dependency map, the investigation step by step, the fix's
+   rollout and verification, a searchable runbook library and the audit log.
 
 ## Architecture
 
@@ -44,8 +50,9 @@ Once a human approves, it runs the fix, checks that it worked, and writes the po
                                                    │     │    ▲        (+ Vector Search)
                                           Gemini API     │    └── runbooks/*.md, embedded
                                                          │        locally with transformers.js
-                                                         │ REST + live events (SSE)
-                                                         ▼
+                            approved fixes, as the ──────┤
+                            opspilot-executor account    │ REST + live events (SSE)
+                            (patch Deployments only)     ▼
                                                   OpsPilot web console
 ```
 
@@ -53,7 +60,8 @@ Once a human approves, it runs the fix, checks that it worked, and writes the po
 
 ```
 apps/server/   OpsPilot API: ingestion, correlation, change tracking, AI investigation,
-               runbook search and incident memory (src/knowledge/)
+               runbook search and incident memory (src/knowledge/), fixes and their
+               verification (src/remediation/), and the audit log (src/audit/)
 apps/web/      OpsPilot console (React)
 demo/          the online shop that OpsPilot watches, plus its load generator
 deploy/k8s/    Kustomize manifests: base/ for everything, overlays/local/ for minikube
@@ -79,9 +87,10 @@ npm run cluster:up
 npm run dev
 ```
 
-`cluster:up` creates the cluster, deploys the shop and the observability stack, and
-generates the two internal secrets in `.env`. `dev` starts the API on :4000 and the console
-on http://localhost:5173. Sign in with the admin account from `.env`.
+`cluster:up` creates the cluster, deploys the shop and the observability stack, generates
+the two internal secrets in `.env`, and copies the fix executor's service-account token
+there as `KUBE_EXECUTOR_TOKEN`. `dev` starts the API on :4000 and the console on
+http://localhost:5173. Sign in with the admin account from `.env`.
 
 On its first start the server downloads the embedding model (about 23 MB, cached
 afterwards) and creates two Atlas Vector Search indexes, which takes a minute or two. Until
@@ -116,7 +125,9 @@ npm run scenario -- list
 | `traffic-spike` | flash-sale traffic exhausts payments' processor connections | payments is saturated, scale up |
 
 Within about three minutes an incident opens in the console, and about a minute later the
-investigation starts. `npm run scenario -- reset` puts everything back.
+investigation starts. When it has found the root cause, the incident page shows the fix
+OpsPilot proposes. Approve it as a responder and watch it roll out, then pass or fail its
+three-minute verification. `npm run scenario -- reset` puts everything back.
 
 ## Checks
 

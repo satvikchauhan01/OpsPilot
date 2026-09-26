@@ -118,6 +118,48 @@ export function useStartInvestigation(number) {
   });
 }
 
+export function useRemediationStatus() {
+  return useQuery({ queryKey: ['remediation'], queryFn: api.remediation, staleTime: 5 * 60_000 });
+}
+
+export function useActions(number) {
+  return useQuery({ queryKey: ['actions', number], queryFn: () => api.actions(number) });
+}
+
+// Proposing, approving and rejecting all change the incident's actions; the server's live
+// events refresh everything else (timeline, status, audit log).
+function useActionMutation(number, mutationFn) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['actions', number] }),
+  });
+}
+
+export function useProposeAction(number) {
+  return useActionMutation(number, (proposal) => api.proposeAction(number, proposal));
+}
+
+export function useApproveAction(number) {
+  return useActionMutation(number, (id) => api.approveAction(id));
+}
+
+export function useRejectAction(number) {
+  return useActionMutation(number, ({ id, reason }) => api.rejectAction(id, reason));
+}
+
+export function useAudit(filters) {
+  return useQuery({
+    queryKey: ['audit', filters],
+    queryFn: () => api.audit(filters),
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useAuditChain() {
+  return useQuery({ queryKey: ['audit-chain'], queryFn: api.auditChain });
+}
+
 export function useIncidentStatus(number) {
   const queryClient = useQueryClient();
   return useMutation({

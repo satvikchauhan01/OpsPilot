@@ -3,7 +3,8 @@ owner: Payments team
 services: [payments, checkout, gateway]
 alerts: [HighLatency, HighErrorRate]
 causes: [slow_dependency]
-actions: [restart]
+actions:
+  restart: Restart payments
 ---
 
 # Payments slow or hanging

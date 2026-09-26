@@ -14,7 +14,8 @@ owner: Payments team
 services: [payments]
 alerts: [WorkerPoolSaturated]
 causes: [resource_saturation]
-actions: [scale]
+actions:
+  scale: Recognise it
 ---
 
 # Payments worker pool saturated
@@ -44,7 +45,7 @@ describe('runbook parser', () => {
     assert.equal(runbook.summary, 'Each pod holds two connections.');
     assert.equal(runbook.owner, 'Payments team');
     assert.deepEqual(runbook.services, ['payments']);
-    assert.deepEqual(runbook.actions, ['scale']);
+    assert.deepEqual(runbook.actions, [{ action: 'scale', heading: 'Recognise it', anchor: 'recognise-it' }]);
     assert.deepEqual(
       runbook.sections.map((section) => section.anchor),
       ['recognise-it', 'recognise-it-2'],
@@ -52,9 +53,13 @@ describe('runbook parser', () => {
     assert.match(runbook.sections[0].markdown, /## a comment in a code block/);
   });
 
-  it('refuses actions outside the catalog and unknown cause types', () => {
-    assert.throws(() => parseRunbook(SAMPLE.replace('[scale]', '[delete_namespace]'), 'bad'), /actions/);
-    assert.throws(() => parseRunbook(SAMPLE.replace('[resource_saturation]', '[gremlins]'), 'bad'), /causes/);
+  it('refuses actions outside the catalog, unknown sections and unknown cause types', () => {
+    assert.throws(
+      () => parseRunbook(SAMPLE.replace('scale: Recognise', 'delete_namespace: Recognise'), 'x'),
+      /actions/,
+    );
+    assert.throws(() => parseRunbook(SAMPLE.replace('scale: Recognise it', 'scale: Pray'), 'x'), /not a section/);
+    assert.throws(() => parseRunbook(SAMPLE.replace('[resource_saturation]', '[gremlins]'), 'x'), /causes/);
   });
 
   it('needs a title and at least one section', () => {

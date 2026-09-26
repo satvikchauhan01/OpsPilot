@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_REPLICAS } from '../remediation/catalog.js';
 
 export const CAUSE_TYPES = [
   'bad_deploy', // a new release introduced the problem
@@ -35,6 +36,7 @@ const findingsSchema = z.object({
           .min(1, 'every hypothesis needs at least one piece of evidence')
           .max(8),
         suggestedAction: z.enum(SUGGESTED_ACTIONS),
+        replicas: z.number().int().min(1).max(MAX_REPLICAS).optional(),
       }),
     )
     .min(1)
@@ -78,6 +80,12 @@ export const FINDINGS_PARAMETERS = {
             },
           },
           suggestedAction: { type: 'string', enum: SUGGESTED_ACTIONS },
+          replicas: {
+            type: 'integer',
+            minimum: 1,
+            maximum: MAX_REPLICAS,
+            description: 'Only with scale_up: how many replicas the service should run in total.',
+          },
         },
         required: ['title', 'service', 'causeType', 'confidence', 'reasoning', 'evidence', 'suggestedAction'],
       },

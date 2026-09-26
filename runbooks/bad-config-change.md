@@ -3,7 +3,8 @@ owner: Shop platform team
 services: [gateway, checkout, payments, inventory]
 alerts: [HighErrorRate, HighLatency, WorkerPoolSaturated]
 causes: [config_change]
-actions: [rollback]
+actions:
+  rollback: Roll back the setting
 ---
 
 # Bad configuration change

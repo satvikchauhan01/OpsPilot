@@ -31,7 +31,9 @@ const schema = z.object({
   ALERTMANAGER_URL: z.url().default('http://localhost:19093'),
 
   KUBE_CONTEXT: z.string().optional(),
+  KUBE_EXECUTOR_TOKEN: z.string().optional(),
   MONITORED_NAMESPACE: z.string().default('shop'),
+  VERIFICATION_WINDOW_MINUTES: z.coerce.number().positive().default(3),
 
   RUNBOOKS_DIR: z.string().optional(),
 
@@ -78,7 +80,8 @@ export const config = {
     tempo: env.TEMPO_URL,
     alertmanager: env.ALERTMANAGER_URL,
   },
-  kube: { context: env.KUBE_CONTEXT, namespace: env.MONITORED_NAMESPACE },
+  kube: { context: env.KUBE_CONTEXT, namespace: env.MONITORED_NAMESPACE, executorToken: env.KUBE_EXECUTOR_TOKEN },
+  remediation: { verificationWindowMs: env.VERIFICATION_WINDOW_MINUTES * 60_000 },
   runbooksDir: env.RUNBOOKS_DIR ?? path.join(ROOT, 'runbooks'),
   correlationWindowMs: env.CORRELATION_WINDOW_MINUTES * 60_000,
   autoResolveMs: env.AUTO_RESOLVE_MINUTES * 60_000,

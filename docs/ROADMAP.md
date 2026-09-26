@@ -9,8 +9,8 @@ only after the current one has been committed. IDs such as `DS-5` refer to
 | 1 | Foundation: demo system, Kubernetes, observability | Done |
 | 2 | Incident core: ingestion, correlation, changes, timeline, topology, UI shell | Done |
 | 3 | AI investigation and root-cause analysis | Done |
-| 4 | Knowledge: runbook RAG and incident memory | Done, in review |
-| 5 | Remediation: approval, execution, verification | Not started |
+| 4 | Knowledge: runbook RAG and incident memory | Done |
+| 5 | Remediation: approval, execution, verification | Done, in review |
 | 6 | Postmortems, hardening and public deployment | Not started |
 
 ---
@@ -114,8 +114,9 @@ each).
 **Verification (2026-09-26, `gemini-3.5-flash-lite`):**
 
 - AI-6: 18 of 20 runs ranked the right service and cause first: S1 5/5, S2 4/5, S3 4/5,
-  S4 5/5 (see [evaluation.md](evaluation.md)). Both misses named the right service with the
-  wrong cause type (`resource_saturation` instead of a leak or a slow dependency).
+  S4 5/5. Both misses named the right service with the wrong cause type
+  (`resource_saturation` instead of a leak or a slow dependency). [evaluation.md](evaluation.md)
+  now holds the later run with the Phase 5 agent.
 - AI-1: each incident was investigated automatically about a minute after it opened, and the
   incident moved to `investigating`. "Investigate again" starts a manual run.
 - AI-2 and AI-3: findings cite evidence ids that the validator checks against what was actually
@@ -179,9 +180,8 @@ earlier occurrence.
   at 375 px and in both themes. It loads separately, which keeps the main bundle at 398 kB.
 - AI-6 still holds with the Phase 4 agent. A check of one run per scenario
   (`npm run evaluate -- --runs 1 --report …`) got 4 of 4 right, at 100% confidence, in 2 to 7
-  model calls each (INC-10 to INC-13). The full five-run evaluation in
-  [evaluation.md](evaluation.md) is from Phase 3. It is repeated once Phase 5 has changed the
-  agent again.
+  model calls each (INC-10 to INC-13). The full five-run evaluation was repeated in Phase 5,
+  after the agent changed again.
 
 ---
 
@@ -189,17 +189,92 @@ earlier occurrence.
 
 **Goal:** approved fixes run safely against Kubernetes and are verified.
 
-- [ ] Action catalog (rollback, restart, scale) with parameter validation — RM-1
-- [ ] Action recommendation from the RCA and runbooks — RM-2
-- [ ] Approval workflow and audit log — RM-3, RM-5
-- [ ] Least-privilege executor service account — RM-4
-- [ ] Post-action verification against SLIs — RM-6
-- [ ] Approval, execution and verification UI, plus the audit log page — UI-1
-- [ ] Tests for action validation and verification — QA-1
+- [x] Action catalog (rollback, restart, scale) with parameter validation — RM-1
+- [x] Action recommendation from the RCA and runbooks — RM-2
+- [x] Approval workflow and audit log — RM-3, RM-5
+- [x] Least-privilege executor service account — RM-4
+- [x] Post-action verification against SLIs — RM-6
+- [x] Approval, execution and verification UI, plus the audit log page — UI-1
+- [x] Tests for action validation and verification — QA-1
 
 **Exit criteria:** RM-7 passes for all four scenarios through the UI.
 
 **Needs from you:** nothing.
+
+**Verification (2026-09-26):**
+
+- RM-1: the catalog is the only way to change the cluster. Proposals are checked by a strict
+  schema, which refuses any other action, extra parameters, service names that aren't
+  Deployment names, and replica counts outside 1–6. Each proposal is then planned against the
+  cluster as it is, so an unknown service is refused as well (422). Before an approved fix
+  runs, the plan is worked out again: a rollback or scale-up whose Deployment has changed
+  since the proposal is refused instead of run.
+- RM-2: when an investigation finds the root cause, OpsPilot proposes the fix on its own. It
+  gives the reason from the root-cause analysis and links the runbook section that explains
+  the fix: runbooks now name that section in their front matter, and the tests check that it
+  exists. The model sizes a scale-up itself (validated, 1–6). A cause the model suggests no
+  fix for falls back to what its runbooks recommend.
+- RM-3: only a responder can approve or reject, and a rejection needs a reason. Approving
+  asks once more, spelling out what will happen. A second approval of the same fix gets 409.
+  Approving moves the incident to `mitigating`.
+- RM-4: `kubectl auth can-i --as=system:serviceaccount:shop:opspilot-executor` says yes only
+  to get, list, watch and patch Deployments and patch their scale in `shop`. It says no to
+  update, create or delete, to pods, exec, secrets and ReplicaSets, to other namespaces,
+  and to anything cluster-wide. Reading what a rollback goes back to uses OpsPilot's separate
+  read-only credentials. The executor's token comes from a service-account Secret that
+  `npm run cluster:up` copies into `.env`.
+- RM-5: every proposal, approval, rejection, start, rollout, verification and outcome is an
+  audit record with who, when, parameters and outcome. Records are chained by SHA-256. The
+  model refuses any update or delete, and the page shows whether the chain is intact. Tests
+  show that an edited, removed or reordered record breaks the chain, and so does an edit
+  whose own hash was recomputed.
+- RM-6: after the rollout, OpsPilot measures the incident's services every 20 s for three
+  minutes. Only the last minute decides: error rate at most 5%, p95 at most 1 s, memory at
+  most 80% and processor connections at most 90% busy, the same limits as the alert rules.
+  A failed check sends the incident back to `investigating`.
+- RM-6 failing for real: the first S4 scale-up (INC-17, payments 2 → 4) failed its check at
+  11% errors and a 2.4 s p95, and the incident went back to `investigating`. The two new pods
+  took about 1 request/s each, while the two old ones took about 20 and rejected charges.
+  Checkout kept its connections to payments open, and Kubernetes balances connections, not
+  requests. The shop's services now close a connection after 50 requests
+  (`demo/src/lib/service.js`), so callers reconnect and new pods get their share.
+- RM-7, through the UI, approving as a responder in the browser. Every fix was verified:
+
+  | Scenario | Incident | Fix | Rolled out | After the check |
+  |----------|----------|-----|------------|-----------------|
+  | S1 `bad-deploy` | INC-19 | roll back checkout 1.4.2 → 1.4.1 | 19 s | checkout and gateway 0% errors, p95 about 0.24 s |
+  | S2 `memory-leak` | INC-15 | restart inventory | 17 s | inventory memory 12% of its limit, 0% errors |
+  | S3 `payments-latency` | INC-16 | restart payments | 17 s | payments p95 from 2.4 s to 0.24 s, 0% errors |
+  | S4 `traffic-spike` | INC-18 | scale payments 2 → 4 | 8 s | 0% errors and 72% of processor connections busy while the surge was still on |
+
+  OpsPilot proposed each fix itself, with the runbook section for it. On S1 the proposal was
+  rejected with a reason, and a responder proposed the same rollback from the form and
+  approved it. That audit trail reads proposed → rejected → proposed → approved → started →
+  rolled out → verifying → verified. Before these runs, S1 was also taken through the API
+  (INC-14). That covered the refusals: an unknown service (422), 9 replicas (400), and a
+  second approval (409). The audit chain was intact at 38 records afterwards.
+- UI-1: the incident page has a remediation panel. It shows the proposal with its reason
+  and runbook link, a confirmation that says what will happen, reject with a reason,
+  "Propose a different fix", the rollout's progress, and a live table of measurements
+  against their limits. The timeline has a "Fixes" filter, and the audit log is its own page
+  (`g a`), with filters and the chain's status.
+- QA-1: 94 unit tests pass, 22 of them new: action validation, choosing the revision to roll
+  back to, when a rollout is finished, recommendations, the verification verdict, fixes on
+  the timeline, and the audit chain.
+- AI-6, with the Phase 5 agent, which now also sizes a scale-up. This is the full evaluation
+  in [evaluation.md](evaluation.md): every scenario meets 4 of 5, and the AI was right
+  every time it got to answer.
+  - 17 of the 19 runs the script scored were right, all at 95–100% confidence (INC-20 to
+    INC-38).
+  - The other two were lost to a network outage on the laptop: DNS for the Atlas cluster
+    failed for about ten minutes. INC-24's automatic investigation couldn't start, and
+    INC-25's failed with "fetch failed".
+  - The 20th run was stopped before the script scored it. Its incident, INC-39, finished
+    anyway and was right (payments / `resource_saturation`, 95%, 2 model calls).
+- The outage showed a gap: an automatic investigation that failed to start was never tried
+  again, and neither was one whose wait was cut short by a server restart. A sweep every
+  minute now starts an investigation for any open incident that has waited well past the
+  delay without one.
 
 ---
 

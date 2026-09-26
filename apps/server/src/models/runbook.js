@@ -9,6 +9,16 @@ const sectionSchema = new mongoose.Schema(
   { _id: false },
 );
 
+// A fix the runbook recommends, and the section that explains how to do it
+const actionSchema = new mongoose.Schema(
+  {
+    action: { type: String, required: true },
+    heading: { type: String, required: true },
+    anchor: { type: String, required: true },
+  },
+  { _id: false },
+);
+
 // A runbook as read from its Markdown file. The file stays the source of truth: this copy is
 // what the UI shows, and the chunks in RunbookChunk are what search runs over.
 const runbookSchema = new mongoose.Schema(
@@ -20,7 +30,7 @@ const runbookSchema = new mongoose.Schema(
     services: { type: [String], default: [] },
     alerts: { type: [String], default: [] },
     causes: { type: [String], default: [] },
-    actions: { type: [String], default: [] },
+    actions: { type: [actionSchema], default: [] },
     intro: { type: String, default: '' },
     sections: { type: [sectionSchema], default: [] },
     // Fingerprint of the file, so an unchanged runbook isn't embedded again on every start

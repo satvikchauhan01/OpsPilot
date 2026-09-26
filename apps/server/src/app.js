@@ -14,6 +14,8 @@ import { changesRouter } from './changes/routes.js';
 import { streamRouter } from './realtime/stream.js';
 import { aiStatusRouter, investigationsRouter } from './investigation/routes.js';
 import { runbooksRouter } from './knowledge/routes.js';
+import { actionsRouter, incidentActionsRouter, remediationStatusRouter } from './remediation/routes.js';
+import { auditRouter } from './audit/routes.js';
 
 export function createApp(context) {
   const app = express();
@@ -37,7 +39,11 @@ export function createApp(context) {
   app.use('/api', requireSession);
   app.use('/api/stream', streamRouter());
   app.use('/api/incidents/:number/investigations', investigationsRouter(context));
+  app.use('/api/incidents/:number/actions', incidentActionsRouter(context));
   app.use('/api/incidents', incidentsRouter(context));
+  app.use('/api/actions', actionsRouter(context));
+  app.use('/api/remediation', remediationStatusRouter(context));
+  app.use('/api/audit', auditRouter(context));
   app.use('/api/ai', aiStatusRouter(context));
   app.use('/api/services', servicesRouter(context));
   app.use('/api/topology', topologyRouter(context));

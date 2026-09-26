@@ -27,6 +27,8 @@ export function useLiveUpdates(onEvent) {
           ['similar-incidents', incident.number],
         ),
       change: () => refresh(['changes'], ['timeline']),
+      'action.updated': ({ incidentNumber }) => refresh(['actions', incidentNumber], ['timeline', incidentNumber]),
+      'audit.appended': () => refresh(['audit'], ['audit-chain']),
       'investigation.updated': ({ incidentNumber, status }) => {
         refresh(['investigation', incidentNumber], ['timeline', incidentNumber]);
         // A finished investigation adds a root cause, which sharpens both searches.

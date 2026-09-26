@@ -3,7 +3,8 @@ owner: Shop platform team
 services: [checkout, gateway, payments, inventory]
 alerts: [HighErrorRate, PodCrashLooping]
 causes: [bad_deploy]
-actions: [rollback]
+actions:
+  rollback: Roll back
 ---
 
 # Roll back a bad release

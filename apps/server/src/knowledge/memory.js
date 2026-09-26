@@ -1,5 +1,7 @@
 import { Incident } from '../models/incident.js';
 import { IncidentMemory } from '../models/incident-memory.js';
+import { Action } from '../models/action.js';
+import { describeDone } from '../remediation/catalog.js';
 import { HttpError } from '../http/errors.js';
 import { bus } from '../realtime/bus.js';
 import { logger } from '../logger.js';
@@ -55,10 +57,15 @@ export function createMemoryService({ namespace }) {
     logger.info({ incident: number }, 'incident remembered');
   }
 
-  // What ended the incident: the net change to the services involved between its start and the
-  // moment its alerts went quiet (a scale-down after that is tidying up, not the fix), or else
-  // the note of whoever resolved it.
+  // What ended the incident: a fix OpsPilot ran and verified, or else the net change to the
+  // services involved between its start and the moment its alerts went quiet (a scale-down
+  // after that is tidying up, not the fix), or else the note of whoever resolved it.
   async function fixOf(incident, rootCause) {
+    const verified = await Action.findOne({ incident: incident._id, status: 'verified' })
+      .sort({ finishedAt: -1 })
+      .lean();
+    if (verified) return { summary: describeDone(verified), changes: [], by: verified.decidedBy };
+
     const services = [...new Set([...servicesOf(incident), rootCause?.service].filter(Boolean))];
     const changes = await deliberateChanges(namespace, services, {
       from: incident.startedAt,

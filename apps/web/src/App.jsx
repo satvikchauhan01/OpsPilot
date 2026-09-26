@@ -7,6 +7,7 @@ import { Loading } from './components/States.jsx';
 import { OverviewPage } from './pages/OverviewPage.jsx';
 import { IncidentsPage } from './pages/IncidentsPage.jsx';
 import { IncidentPage } from './pages/IncidentPage.jsx';
+import { AuditPage } from './pages/AuditPage.jsx';
 import { NotFoundPage } from './pages/NotFoundPage.jsx';
 
 // The runbook reader brings a Markdown renderer that no other page needs, so it loads on
@@ -38,6 +39,7 @@ export function App() {
           <Route path="incidents/:number" element={<IncidentPage />} />
           <Route path="runbooks" element={runbooks} />
           <Route path="runbooks/:slug" element={runbooks} />
+          <Route path="audit" element={<AuditPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

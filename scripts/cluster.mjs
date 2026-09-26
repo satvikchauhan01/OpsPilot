@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { run, output, isInstalled, step } from './lib/shell.mjs';
 import { PROFILE, ROOT, LOCAL_OVERLAY, kubectl, kubectlOutput } from './lib/kube.mjs';
-import { ensureGeneratedSecrets } from './lib/env.mjs';
+import { ensureGeneratedSecrets, setEnvValue } from './lib/env.mjs';
 
 const DEMO_DIR = path.join(ROOT, 'demo');
 const NAMESPACES = ['observability', 'shop', 'loadgen'];
@@ -65,6 +65,7 @@ function up() {
   for (const namespace of NAMESPACES) {
     kubectl(['wait', '--for=condition=Available', 'deployment', '--all', '-n', namespace, '--timeout=300s']);
   }
+  connectExecutor();
 
   printEndpoints();
 }
@@ -191,6 +192,27 @@ function connectAlertmanager() {
     },
   };
   kubectl(['apply', '-f', '-'], { input: JSON.stringify(secret) });
+}
+
+// OpsPilot runs approved fixes as its own least-privileged service account (see
+// deploy/k8s/base/opspilot). Kubernetes fills that account's token into a Secret; it is copied
+// into .env as KUBE_EXECUTOR_TOKEN, where the server picks it up.
+function connectExecutor() {
+  const encoded = kubectlOutput([
+    '-n',
+    'shop',
+    'get',
+    'secret',
+    'opspilot-executor-token',
+    '-o',
+    'jsonpath={.data.token}',
+  ]).trim();
+  if (!encoded) throw new Error('Kubernetes has not filled in the opspilot-executor token yet, run this again');
+
+  const token = Buffer.from(encoded, 'base64').toString('utf8');
+  if (setEnvValue(path.join(ROOT, '.env'), 'KUBE_EXECUTOR_TOKEN', token)) {
+    console.log('Saved the executor token in .env as KUBE_EXECUTOR_TOKEN');
+  }
 }
 
 function minikubeDockerEnv() {

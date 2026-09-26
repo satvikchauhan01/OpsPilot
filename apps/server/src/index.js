@@ -7,7 +7,7 @@ import { createPrometheus } from './telemetry/prometheus.js';
 import { createLoki } from './telemetry/loki.js';
 import { createTempo } from './telemetry/tempo.js';
 import { createTopologyCache } from './topology/service.js';
-import { createKubeClient } from './kube/client.js';
+import { createExecutorClient, createKubeClient } from './kube/client.js';
 import { startChangeTracker } from './changes/tracker.js';
 import { createIncidentService } from './incidents/service.js';
 import { startLifecycle } from './incidents/lifecycle.js';
@@ -15,6 +15,9 @@ import { createGemini } from './llm/gemini.js';
 import { createInvestigationService } from './investigation/service.js';
 import { createRunbookService } from './knowledge/runbooks.js';
 import { createMemoryService } from './knowledge/memory.js';
+import { createAuditLog } from './audit/log.js';
+import { createExecutor } from './remediation/executor.js';
+import { createRemediationService } from './remediation/service.js';
 
 if (config.sessionSecretIsEphemeral)
   logger.warn('SESSION_SECRET is not set, so sessions end whenever the server restarts');
@@ -50,7 +53,29 @@ const investigations = createInvestigationService({
 await investigations.failInterrupted();
 investigations.investigateNewIncidents();
 
-const app = createApp({ config, prometheus, topology, tracker, incidents, investigations, runbooks, memory });
+const audit = createAuditLog();
+const executor = createExecutor({
+  reader: kube,
+  executor: createExecutorClient(config.kube),
+  namespace: config.kube.namespace,
+});
+if (!executor.enabled) logger.warn('KUBE_EXECUTOR_TOKEN is not set, so approved fixes cannot run');
+const remediation = createRemediationService({ executor, prometheus, incidents, runbooks, audit, config });
+await remediation.failInterrupted();
+remediation.start();
+
+const app = createApp({
+  config,
+  prometheus,
+  topology,
+  tracker,
+  incidents,
+  investigations,
+  runbooks,
+  memory,
+  remediation,
+  audit,
+});
 const server = app.listen(config.port, () =>
   logger.info({ port: config.port, model: llm?.model }, 'OpsPilot server listening'),
 );

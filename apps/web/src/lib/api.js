@@ -42,6 +42,15 @@ export const api = {
   setIncidentStatus: (number, status, note) =>
     request(`/incidents/${number}/status`, { method: 'POST', body: { status, note: note || undefined } }),
 
+  remediation: () => request('/remediation'),
+  actions: (number) => request(`/incidents/${number}/actions`),
+  proposeAction: (number, proposal) => request(`/incidents/${number}/actions`, { method: 'POST', body: proposal }),
+  approveAction: (id) => request(`/actions/${id}/approve`, { method: 'POST' }),
+  rejectAction: (id, reason) => request(`/actions/${id}/reject`, { method: 'POST', body: { reason } }),
+
+  audit: (filters = {}) => request(`/audit${query(filters)}`),
+  auditChain: () => request('/audit/verify'),
+
   incidentRunbooks: (number) => request(`/incidents/${number}/runbooks`),
   similarIncidents: (number) => request(`/incidents/${number}/similar`),
 

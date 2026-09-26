@@ -3,7 +3,8 @@ owner: Inventory team
 services: [inventory, checkout, payments, gateway]
 alerts: [MemoryNearLimit, FrequentRestarts]
 causes: [memory_leak]
-actions: [restart]
+actions:
+  restart: Restart the service
 ---
 
 # Memory climbing towards the limit

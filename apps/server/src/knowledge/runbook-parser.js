@@ -1,10 +1,8 @@
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { CAUSE_TYPES } from '../investigation/findings.js';
+import { ACTION_TYPES } from '../remediation/catalog.js';
 import { plainText, wordCount } from './text.js';
-
-// The remediation actions OpsPilot can run. A runbook lists the ones it recommends.
-export const RUNBOOK_ACTIONS = ['rollback', 'restart', 'scale'];
 
 // all-MiniLM-L6-v2 reads at most 256 word pieces. 160 words leaves room for the title line
 // that starts every chunk.
@@ -17,7 +15,9 @@ const metadataSchema = z.object({
   services: z.array(z.string()).default([]),
   alerts: z.array(z.string()).default([]),
   causes: z.array(z.enum(CAUSE_TYPES)).default([]),
-  actions: z.array(z.enum(RUNBOOK_ACTIONS)).default([]),
+  // The fixes from OpsPilot's catalog this runbook recommends, each with the heading of the
+  // section that explains it, e.g. `rollback: Roll back`
+  actions: z.partialRecord(z.enum(ACTION_TYPES), z.string().trim().min(1)).default({}),
 });
 
 /**
@@ -50,17 +50,26 @@ export function parseRunbook(source, slug) {
 
   const introMarkdown = intro.join('\n').trim();
   const anchors = new Set(['overview']);
+  const parsedSections = sections.map(({ heading, lines }) => ({
+    anchor: uniqueAnchor(heading, anchors),
+    heading,
+    markdown: lines.join('\n').trim(),
+  }));
+
+  const actions = Object.entries(metadata.data.actions).map(([action, heading]) => {
+    const section = parsedSections.find((candidate) => candidate.heading === heading);
+    if (!section) throw new Error(`${slug}: actions.${action} points at "${heading}", which is not a section`);
+    return { action, heading, anchor: section.anchor };
+  });
+
   return {
     slug,
     title: title[1].trim(),
     summary: plainText(introMarkdown).split('\n\n')[0] ?? '',
     ...metadata.data,
+    actions,
     intro: introMarkdown,
-    sections: sections.map(({ heading, lines }) => ({
-      anchor: uniqueAnchor(heading, anchors),
-      heading,
-      markdown: lines.join('\n').trim(),
-    })),
+    sections: parsedSections,
   };
 }
 

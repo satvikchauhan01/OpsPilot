@@ -10,6 +10,7 @@ const FILTERS = [
   { kind: 'alert', label: 'Alerts' },
   { kind: 'k8s', label: 'Kubernetes' },
   { kind: 'investigation', label: 'AI' },
+  { kind: 'action', label: 'Fixes' },
   { kind: 'incident', label: 'Status' },
 ];
 

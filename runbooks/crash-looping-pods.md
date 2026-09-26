@@ -3,7 +3,9 @@ owner: Shop platform team
 services: [gateway, checkout, payments, inventory]
 alerts: [PodCrashLooping, FrequentRestarts, ReplicasUnavailable]
 causes: [crash_loop, bad_deploy, memory_leak]
-actions: [rollback, restart]
+actions:
+  rollback: Fix by cause
+  restart: Fix by cause
 ---
 
 # Pods crash-looping or restarting

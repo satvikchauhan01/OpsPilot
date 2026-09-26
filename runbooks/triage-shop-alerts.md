@@ -3,7 +3,6 @@ owner: Shop on-call
 services: [gateway, checkout, payments, inventory]
 alerts: [HighErrorRate, HighLatency, TargetDown]
 causes: [unknown]
-actions: []
 ---
 
 # Triage an alert on the shop

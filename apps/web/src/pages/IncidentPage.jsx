@@ -10,6 +10,7 @@ import { BlastRadiusPanel } from '../incident/BlastRadiusPanel.jsx';
 import { Timeline } from '../incident/Timeline.jsx';
 import { AlertsTable } from '../incident/AlertsTable.jsx';
 import { InvestigationPanel } from '../incident/InvestigationPanel.jsx';
+import { RemediationPanel } from '../incident/RemediationPanel.jsx';
 import { SimilarIncidentsPanel } from '../incident/SimilarIncidentsPanel.jsx';
 import { RunbooksPanel } from '../incident/RunbooksPanel.jsx';
 import styles from './IncidentPage.module.css';
@@ -33,6 +34,7 @@ export function IncidentPage() {
       <article className={styles.page}>
         <IncidentHeader incident={incident.data} now={now} />
         <InvestigationPanel number={number} />
+        <RemediationPanel incident={incident.data} />
 
         <div className={styles.layout}>
           <div className={styles.main}>

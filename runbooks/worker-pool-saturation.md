@@ -3,7 +3,8 @@ owner: Payments team
 services: [payments, checkout, gateway]
 alerts: [WorkerPoolSaturated, HighErrorRate, HighLatency]
 causes: [resource_saturation, traffic_surge]
-actions: [scale]
+actions:
+  scale: Scale out payments
 ---
 
 # Payments worker pool saturated

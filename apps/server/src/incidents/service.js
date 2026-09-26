@@ -190,7 +190,7 @@ export function createIncidentService({ topology, config }) {
     return { ...incident.toJSON(), alerts: alerts.map((alert) => alert.toJSON()) };
   }
 
-  async function timeline(number, { investigations = [] } = {}) {
+  async function timeline(number, { investigations = [], actions = [] } = {}) {
     const incident = await findByNumber(number);
     const alerts = await Alert.find({ incident: incident._id });
     const end = incident.resolvedAt ?? new Date();
@@ -204,7 +204,7 @@ export function createIncidentService({ topology, config }) {
       .sort({ at: 1 })
       .limit(500);
 
-    return buildTimeline({ incident, alerts, changes, investigations });
+    return buildTimeline({ incident, alerts, changes, investigations, actions });
   }
 
   return { ingest, changeStatus, resolveQuietIncidents, reconcile, findByNumber, list, get, timeline };

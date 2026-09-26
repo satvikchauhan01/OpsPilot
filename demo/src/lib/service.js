@@ -11,6 +11,13 @@ const { runShutdownHooks } = require('./lifecycle');
 // requests that were already on their way here.
 const DRAIN_DELAY_MS = 5000;
 
+// Callers keep their connections open between requests, and Kubernetes balances connections,
+// not requests. Without a limit, pods added by a scale-out get almost no traffic: OpsPilot's
+// verification caught exactly that in the traffic-spike scenario. Closing each connection
+// after this many requests (the response says "Connection: close") makes callers reconnect
+// now and then, and their new connections spread over every pod.
+const REQUESTS_PER_CONNECTION = 50;
+
 function createService({ routes, port = Number(process.env.PORT) || 8080 }) {
   const app = express();
 
@@ -38,6 +45,7 @@ function createService({ routes, port = Number(process.env.PORT) || 8080 }) {
   app.use(handleError);
 
   const server = app.listen(port, () => logger.info({ port }, 'service started'));
+  server.maxRequestsPerSocket = REQUESTS_PER_CONNECTION;
 
   process.once('SIGTERM', async () => {
     logger.info('SIGTERM received, draining connections');

@@ -11,6 +11,18 @@ export const CAUSE_LABEL = {
   unknown: 'Unknown',
 };
 
+export const ACTION_STATUS_LABEL = {
+  proposed: 'Waiting for approval',
+  approved: 'Approved',
+  running: 'Rolling out',
+  verifying: 'Verifying',
+  verified: 'Verified',
+  failed: 'Failed',
+  rejected: 'Rejected',
+  superseded: 'Replaced',
+  cancelled: 'Cancelled',
+};
+
 // Suggested actions from investigations, and the actions runbooks recommend
 export const ACTION_LABEL = {
   rollback: 'Roll back',

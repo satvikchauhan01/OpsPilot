@@ -24,3 +24,18 @@ export function ensureGeneratedSecrets(envPath) {
   if (added.length > 0) writeFileSync(envPath, text);
   return { settings: parseEnv(text), added };
 }
+
+// Sets one setting in the .env file, replacing its line if there is one. Returns whether the
+// file changed.
+export function setEnvValue(envPath, name, value) {
+  const text = existsSync(envPath) ? readFileSync(envPath, 'utf8') : '';
+  if (parseEnv(text)[name] === value) return false;
+
+  const line = `${name}=${value}`;
+  const existing = new RegExp(`^[ \\t]*${name}[ \\t]*=.*$`, 'm');
+  const next = existing.test(text)
+    ? text.replace(existing, line)
+    : `${text}${text && !text.endsWith('\n') ? '\n' : ''}${line}\n`;
+  writeFileSync(envPath, next);
+  return true;
+}

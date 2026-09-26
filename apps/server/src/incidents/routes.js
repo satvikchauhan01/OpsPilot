@@ -22,7 +22,7 @@ const statusChange = z.object({
   note: z.string().trim().max(500).optional(),
 });
 
-export function incidentsRouter({ incidents, investigations, runbooks, memory, prometheus, config }) {
+export function incidentsRouter({ incidents, investigations, runbooks, memory, remediation, prometheus, config }) {
   const router = Router();
   const number = (req) => parse(incidentNumber, req.params.number);
 
@@ -36,8 +36,11 @@ export function incidentsRouter({ incidents, investigations, runbooks, memory, p
 
   router.get('/:number/timeline', async (req, res) => {
     const incident = await incidents.findByNumber(number(req));
-    const history = investigations ? await investigations.forIncident(incident._id) : [];
-    res.json(await incidents.timeline(incident.number, { investigations: history }));
+    const [history, actions] = await Promise.all([
+      investigations.forIncident(incident._id),
+      remediation.forIncident(incident._id),
+    ]);
+    res.json(await incidents.timeline(incident.number, { investigations: history, actions }));
   });
 
   // The dependency graph as it was during the incident, with the suspected service and
