@@ -20,10 +20,17 @@ const schema = z.object({
   MONGODB_URI: z.string().min(1, 'set it to your MongoDB Atlas connection string'),
   MONGODB_DB: z.string().default('opspilot'),
 
+  PUBLIC_URL: z.url().default('http://localhost:5173'),
   SESSION_SECRET: z.string().min(32, 'use at least 32 random characters').optional(),
   ADMIN_EMAIL: z.email().optional(),
   ADMIN_PASSWORD: z.string().min(10, 'use at least 10 characters').optional(),
+  ADMIN_NAME: z.string().trim().min(1).max(60).optional(),
   ALERTMANAGER_WEBHOOK_TOKEN: z.string().min(16, 'use at least 16 random characters'),
+
+  DEMO_MODE: z.enum(['true', 'false']).default('false'),
+  KUBE_DEMO_TOKEN: z.string().optional(),
+  DEMO_RESET_MINUTES: z.coerce.number().positive().default(20),
+  DEMO_COOLDOWN_MINUTES: z.coerce.number().nonnegative().default(3),
 
   PROMETHEUS_URL: z.url().default('http://localhost:19090'),
   LOKI_URL: z.url().default('http://localhost:13100'),
@@ -68,11 +75,16 @@ export const config = {
   env: env.NODE_ENV,
   isProduction,
   port: env.PORT,
+  // Where people open OpsPilot. Changes coming from any other site are refused.
+  publicOrigin: new URL(env.PUBLIC_URL).origin,
   mongo: { uri: env.MONGODB_URI, db: env.MONGODB_DB },
   // Without a fixed secret, sessions just don't survive a restart. Fine while developing.
   sessionSecret: env.SESSION_SECRET ?? randomBytes(32).toString('hex'),
   sessionSecretIsEphemeral: !env.SESSION_SECRET,
-  admin: env.ADMIN_EMAIL && env.ADMIN_PASSWORD ? { email: env.ADMIN_EMAIL, password: env.ADMIN_PASSWORD } : null,
+  admin:
+    env.ADMIN_EMAIL && env.ADMIN_PASSWORD
+      ? { email: env.ADMIN_EMAIL, password: env.ADMIN_PASSWORD, name: env.ADMIN_NAME }
+      : null,
   webhookToken: env.ALERTMANAGER_WEBHOOK_TOKEN,
   urls: {
     prometheus: env.PROMETHEUS_URL,
@@ -82,6 +94,13 @@ export const config = {
   },
   kube: { context: env.KUBE_CONTEXT, namespace: env.MONITORED_NAMESPACE, executorToken: env.KUBE_EXECUTOR_TOKEN },
   remediation: { verificationWindowMs: env.VERIFICATION_WINDOW_MINUTES * 60_000 },
+  demo: {
+    // Public visitors get one-click guest sessions only when this is on.
+    guests: env.DEMO_MODE === 'true',
+    token: env.KUBE_DEMO_TOKEN,
+    resetMs: env.DEMO_RESET_MINUTES * 60_000,
+    cooldownMs: env.DEMO_COOLDOWN_MINUTES * 60_000,
+  },
   runbooksDir: env.RUNBOOKS_DIR ?? path.join(ROOT, 'runbooks'),
   correlationWindowMs: env.CORRELATION_WINDOW_MINUTES * 60_000,
   autoResolveMs: env.AUTO_RESOLVE_MINUTES * 60_000,

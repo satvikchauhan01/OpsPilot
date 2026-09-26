@@ -1,0 +1,412 @@
+.page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.header h1 {
+  font-size: 24px;
+}
+
+.lede {
+  max-width: 72ch;
+  margin-top: var(--space-2);
+  color: var(--ink-2);
+}
+
+.budget {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.budget[data-low] {
+  border-color: var(--warning);
+  background: var(--warning-wash);
+}
+
+.budgetValue {
+  font: 500 20px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.budgetOf {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+/* The shop's state, in the same shape as the overview's status line */
+.status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.status[data-tone='ok'] {
+  border-left-color: var(--ok);
+}
+
+.status[data-tone='warning'] {
+  border-left-color: var(--warning);
+}
+
+.status[data-tone='critical'] {
+  border-left-color: var(--critical);
+}
+
+/* Circle for ok, triangle for settling, square for broken: the same shapes as everywhere else */
+.statusMark {
+  width: 12px;
+  height: 12px;
+  margin-top: 8px;
+  background: var(--ok);
+  border-radius: 50%;
+}
+
+.status[data-tone='warning'] .statusMark {
+  border-radius: 0;
+  background: var(--warning);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.status[data-tone='critical'] .statusMark {
+  border-radius: 0;
+  background: var(--critical);
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+.statusText {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.headline {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.subline {
+  color: var(--ink-2);
+}
+
+.statusAction {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-2);
+}
+
+.reset {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.reset:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+/* Three dots that light up in turn while nothing has happened yet */
+.dots {
+  width: 24px;
+  height: 6px;
+  background: radial-gradient(circle, var(--ink-3) 2.5px, transparent 3px) 0 0 / 8px 6px repeat-x;
+  animation: breathe 1.2s ease-in-out infinite;
+}
+
+.caused {
+  display: grid;
+  gap: 4px;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.incidentLink {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--space-2);
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  text-decoration: none;
+}
+
+.incidentLink:hover {
+  border-color: var(--ink-3);
+  background: var(--hover);
+}
+
+.incidentTitle {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The six steps of a run, read left to right */
+.flow {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.flow li {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+}
+
+/* The rule that joins each step to the next */
+.flow li::after {
+  content: '';
+  position: absolute;
+  top: 23px;
+  left: 30px;
+  right: 8px;
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.flow li:last-child::after {
+  display: none;
+}
+
+.flowNumber {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--bg);
+  font: 500 11px/1 var(--font-mono);
+  color: var(--ink-2);
+}
+
+.flowTitle {
+  position: relative;
+  z-index: 1;
+  justify-self: start;
+  padding-right: var(--space-2);
+  background: var(--bg);
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.flowDetail {
+  grid-column: 2;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.notice {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--warning-wash);
+  font-size: 13px;
+}
+
+.scenarios {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scenario {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 5fr) minmax(0, 4fr) 96px;
+  align-items: start;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.scenario:last-child {
+  border-bottom: 0;
+}
+
+.scenario[data-active] {
+  background: var(--critical-wash);
+  box-shadow: inset 3px 0 0 var(--critical);
+}
+
+.scenarioId {
+  font: 600 20px/1.2 var(--font-mono);
+  color: var(--ink-3);
+}
+
+.scenario[data-active] .scenarioId {
+  color: var(--critical);
+}
+
+.scenarioText {
+  display: grid;
+  gap: 4px;
+}
+
+.scenarioTitle {
+  font-size: 16px;
+}
+
+.expected {
+  display: grid;
+  gap: 4px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.scenarioAction {
+  justify-self: end;
+}
+
+.start {
+  height: 32px;
+  min-width: 80px;
+  padding: 0 14px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.start:hover:not(:disabled) {
+  border-color: var(--signal);
+  background: var(--signal);
+  color: #fff;
+}
+
+.start:disabled {
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+.running {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  color: var(--critical);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.error {
+  margin: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--critical);
+  background: var(--critical-wash);
+  font-size: 13px;
+}
+
+.statusAction .error {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .flow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: var(--space-2);
+  }
+
+  .flow li:nth-child(3)::after {
+    display: none;
+  }
+
+  .scenario {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+  }
+
+  .expected {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .status {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .statusAction {
+    grid-column: 2;
+    justify-items: start;
+  }
+
+  .flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .flow li::after {
+    display: none;
+  }
+
+  .scenario {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .scenarioId {
+    font-size: 16px;
+  }
+
+  .scenarioAction {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.35;
+  }
+}

@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { parse } from '../http/errors.js';
+import { limitPerPerson } from '../http/limits.js';
 import { requireRole } from '../auth/middleware.js';
+import { actorOf } from '../auth/session.js';
 import { ACTION_TYPES } from './catalog.js';
 
 const incidentNumber = z.coerce.number().int().positive();
@@ -17,14 +18,11 @@ const proposal = z.object({
 
 const rejection = z.object({ reason: z.string().trim().min(3, 'say why, in a few words').max(500) });
 
-// Everything that changes the cluster is limited per person, not only per address.
-const actionLimiter = rateLimit({
-  windowMs: 10 * 60_000,
+// Everything that changes the cluster is limited per person.
+const actionLimiter = limitPerPerson({
+  minutes: 10,
   limit: 30,
-  standardHeaders: 'draft-8',
-  legacyHeaders: false,
-  keyGenerator: (req) => req.user.id,
-  message: { error: 'too many fixes proposed or decided, wait a few minutes' },
+  error: 'too many fixes proposed or decided, wait a few minutes',
 });
 
 // Mounted at /api/incidents/:number/actions
@@ -38,14 +36,14 @@ export function incidentActionsRouter({ remediation }) {
 
   // A responder proposing a fix of their own. It still needs an approval, which the same
   // responder can give.
-  router.post('/', requireRole('responder'), actionLimiter, async (req, res) => {
+  router.post('/', requireRole('responder', 'guest'), actionLimiter, async (req, res) => {
     const { type, service, replicas, reason } = parse(proposal, req.body);
     const params = type === 'scale' ? { service, replicas } : { service };
     const action = await remediation.propose(
       number(req),
       { type, params },
       {
-        by: req.user.email,
+        by: actorOf(req.user),
         reason,
         source: { kind: 'responder' },
       },
@@ -60,14 +58,14 @@ export function incidentActionsRouter({ remediation }) {
 export function actionsRouter({ remediation }) {
   const router = Router();
 
-  router.post('/:id/approve', requireRole('responder'), actionLimiter, async (req, res) => {
-    const action = await remediation.approve(parse(actionId, req.params.id), { by: req.user.email });
+  router.post('/:id/approve', requireRole('responder', 'guest'), actionLimiter, async (req, res) => {
+    const action = await remediation.approve(parse(actionId, req.params.id), { by: actorOf(req.user) });
     res.status(202).json(action.toJSON());
   });
 
-  router.post('/:id/reject', requireRole('responder'), actionLimiter, async (req, res) => {
+  router.post('/:id/reject', requireRole('responder', 'guest'), actionLimiter, async (req, res) => {
     const { reason } = parse(rejection, req.body);
-    const action = await remediation.reject(parse(actionId, req.params.id), { by: req.user.email, reason });
+    const action = await remediation.reject(parse(actionId, req.params.id), { by: actorOf(req.user), reason });
     res.json(action.toJSON());
   });
 

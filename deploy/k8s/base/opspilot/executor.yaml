@@ -6,7 +6,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: opspilot-executor
-  namespace: shop
+  namespace: opspilot
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -29,19 +29,20 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: opspilot-executor
-    namespace: shop
+    namespace: opspilot
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: opspilot-executor
 ---
-# A long-lived token for the service account. Kubernetes fills in the token itself;
-# scripts/cluster.mjs copies it into .env as KUBE_EXECUTOR_TOKEN.
+# A long-lived token for the service account. Kubernetes fills in the token itself. Locally
+# scripts/cluster.mjs copies it into .env as KUBE_EXECUTOR_TOKEN; in the cloud the server
+# reads it from this Secret.
 apiVersion: v1
 kind: Secret
 metadata:
   name: opspilot-executor-token
-  namespace: shop
+  namespace: opspilot
   annotations:
     kubernetes.io/service-account.name: opspilot-executor
 type: kubernetes.io/service-account-token

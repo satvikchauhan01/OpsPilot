@@ -36,7 +36,8 @@ export function usersRouter() {
 }
 
 // The first admin comes from ADMIN_EMAIL / ADMIN_PASSWORD. It's only created when that
-// email doesn't exist yet, so changing the variables later never overwrites a password.
+// email doesn't exist yet, so changing the variables later never overwrites a password. The
+// display name (ADMIN_NAME) can change at any time: it is what others see in the timeline.
 export async function ensureAdmin(admin) {
   if (!admin) {
     if (!(await User.exists({ role: 'admin' }))) {
@@ -46,11 +47,18 @@ export async function ensureAdmin(admin) {
   }
 
   const email = admin.email.toLowerCase();
-  if (await User.exists({ email })) return;
+  const existing = await User.findOne({ email });
+  if (existing) {
+    if (admin.name && existing.name !== admin.name) {
+      existing.name = admin.name;
+      await existing.save();
+    }
+    return;
+  }
 
   await User.create({
     email,
-    name: email.split('@')[0],
+    name: admin.name ?? email.split('@')[0],
     role: 'admin',
     passwordHash: await bcrypt.hash(admin.password, BCRYPT_COST),
   });

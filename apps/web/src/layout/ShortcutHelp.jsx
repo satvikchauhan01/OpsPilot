@@ -7,6 +7,7 @@ const SHORTCUTS = [
   { keys: ['g', 'i'], action: 'Go to incidents' },
   { keys: ['g', 'r'], action: 'Go to runbooks' },
   { keys: ['g', 'a'], action: 'Go to the audit log' },
+  { keys: ['g', 'd'], action: 'Go to demo control' },
   { keys: ['/'], action: 'Search runbooks (on the runbooks page)' },
   { keys: ['j'], action: 'Next incident in a list' },
   { keys: ['k'], action: 'Previous incident in a list' },

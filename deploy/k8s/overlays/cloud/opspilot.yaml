@@ -1,0 +1,222 @@
+# OpsPilot itself, in the cloud: the API server and the console. Locally both run on the
+# host with `npm run dev` instead.
+
+# The server's own identity. With it the server only reads the shop; approved fixes and the
+# demo scenarios use the opspilot-executor and opspilot-demo accounts (see base/opspilot).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opspilot-server
+  namespace: opspilot
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: opspilot-reader
+  namespace: shop
+rules:
+  - apiGroups: [apps]
+    resources: [deployments, replicasets]
+    verbs: [get, list, watch]
+  - apiGroups: ['']
+    resources: [pods, events]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: opspilot-reader
+  namespace: shop
+subjects:
+  - kind: ServiceAccount
+    name: opspilot-server
+    namespace: opspilot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: opspilot-reader
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opspilot-server
+  namespace: opspilot
+  labels:
+    app.kubernetes.io/name: opspilot-server
+spec:
+  # One server at a time: the change tracker, the investigation and fix queues and the demo
+  # timer all live in the process.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opspilot-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: opspilot-server
+    spec:
+      serviceAccountName: opspilot-server
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: server
+          # The tag changes with every deploy (deploy.env). The images are built on the VM and
+          # imported into k3s, so there is nothing to pull.
+          image: opspilot/server:IMAGE_TAG
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 4000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PUBLIC_URL
+              value: https://DOMAIN
+            - name: DEMO_MODE
+              value: "true"
+            - name: MONITORED_NAMESPACE
+              value: shop
+            - name: PROMETHEUS_URL
+              value: http://prometheus.observability:9090
+            - name: LOKI_URL
+              value: http://loki.observability:3100
+            - name: TEMPO_URL
+              value: http://tempo.observability:3200
+            - name: ALERTMANAGER_URL
+              value: http://alertmanager.observability:9093
+            - name: KUBE_EXECUTOR_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opspilot-executor-token
+                  key: token
+            - name: KUBE_DEMO_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opspilot-demo-token
+                  key: token
+          # The database, the Gemini key, the admin account and the generated secrets, which
+          # scripts/cloud.mjs copies from .env.cloud
+          envFrom:
+            - secretRef:
+                name: opspilot-server
+          # Ready once the database answers. Alive as long as it listens: a restart wouldn't
+          # bring an unreachable database back.
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opspilot-server
+  namespace: opspilot
+  labels:
+    app.kubernetes.io/name: opspilot-server
+spec:
+  selector:
+    app.kubernetes.io/name: opspilot-server
+  ports:
+    - name: http
+      port: 4000
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opspilot-web
+  namespace: opspilot
+  labels:
+    app.kubernetes.io/name: opspilot-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opspilot-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: opspilot-web
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          image: opspilot/web:IMAGE_TAG
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          # nginx keeps its pid file and request buffers here
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opspilot-web
+  namespace: opspilot
+  labels:
+    app.kubernetes.io/name: opspilot-web
+spec:
+  selector:
+    app.kubernetes.io/name: opspilot-web
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

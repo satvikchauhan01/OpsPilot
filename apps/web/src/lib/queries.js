@@ -171,3 +171,64 @@ export function useIncidentStatus(number) {
     },
   });
 }
+
+// The postmortem of a resolved incident, or null when none has been written yet.
+export function usePostmortem(number) {
+  return useQuery({
+    queryKey: ['postmortem', number],
+    queryFn: async () => {
+      try {
+        return await api.postmortem(number);
+      } catch (err) {
+        if (err.status === 404) return null;
+        throw err;
+      }
+    },
+  });
+}
+
+// Drafting runs in the background; the server's live events say when it's written.
+export function useDraftPostmortem(number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.draftPostmortem(number),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['postmortem', number] }),
+  });
+}
+
+export function useSavePostmortem(number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (markdown) => api.savePostmortem(number, markdown),
+    onSuccess: (postmortem) => queryClient.setQueryData(['postmortem', number], postmortem),
+  });
+}
+
+export function useFinalizePostmortem(number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.finalizePostmortem(number),
+    onSuccess: (postmortem) => queryClient.setQueryData(['postmortem', number], postmortem),
+  });
+}
+
+export function useDemo() {
+  return useQuery({ queryKey: ['demo'], queryFn: api.demo });
+}
+
+// Both answer with the demo's new status.
+export function useStartScenario() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.startScenario,
+    onSuccess: (status) => queryClient.setQueryData(['demo'], status),
+  });
+}
+
+export function useResetDemo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.resetDemo,
+    onSuccess: (status) => queryClient.setQueryData(['demo'], status),
+  });
+}

@@ -1,0 +1,64 @@
+# The public deployment on a single-node k3s cluster (docs/DEPLOYMENT.md): the base, plus
+# OpsPilot itself behind Traefik with a Let's Encrypt certificate. Nothing else is reachable
+# from outside. `npm run cloud -- deploy` writes deploy.env and applies this.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - opspilot.yaml
+  - ingress.yaml
+  - traefik.yaml
+
+# The domain and this deploy's image tag. They only fill in the placeholders below; the
+# local-config annotation keeps the ConfigMap itself out of the cluster.
+configMapGenerator:
+  - name: deploy-settings
+    envs:
+      - deploy.env
+    options:
+      disableNameSuffixHash: true
+      annotations:
+        config.kubernetes.io/local-config: "true"
+
+replacements:
+  - source:
+      kind: ConfigMap
+      name: deploy-settings
+      fieldPath: data.DOMAIN
+    targets:
+      - select:
+          kind: Ingress
+          name: opspilot
+        fieldPaths:
+          - spec.tls.0.hosts.0
+          - spec.rules.0.host
+      - select:
+          kind: Deployment
+          name: opspilot-server
+        fieldPaths:
+          - spec.template.spec.containers.[name=server].env.[name=PUBLIC_URL].value
+        options:
+          delimiter: //
+          index: 1
+  - source:
+      kind: ConfigMap
+      name: deploy-settings
+      fieldPath: data.IMAGE_TAG
+    targets:
+      - select:
+          kind: Deployment
+          name: opspilot-server
+        fieldPaths:
+          - spec.template.spec.containers.[name=server].image
+        options:
+          delimiter: ":"
+          index: 1
+      - select:
+          kind: Deployment
+          name: opspilot-web
+        fieldPaths:
+          - spec.template.spec.containers.[name=web].image
+        options:
+          delimiter: ":"
+          index: 1

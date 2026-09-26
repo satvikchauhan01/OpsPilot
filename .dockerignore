@@ -1,0 +1,13 @@
+# Context for the OpsPilot images (apps/*/Dockerfile), which are built from the repository
+# root. The demo shop has its own context in demo/.
+**/node_modules
+**/dist
+**/*.log
+.git
+.env
+.env.*
+.claude
+demo
+deploy
+docs
+scripts

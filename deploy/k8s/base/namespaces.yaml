@@ -14,3 +14,9 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: observability
+---
+# OpsPilot's own identities, and in the cloud OpsPilot itself
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opspilot

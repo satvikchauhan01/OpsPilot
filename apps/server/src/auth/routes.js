@@ -1,11 +1,15 @@
+import { randomBytes } from 'node:crypto';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
+import { config } from '../config.js';
 import { User } from '../models/user.js';
 import { HttpError, parse } from '../http/errors.js';
 import { clearSession, issueSession } from './session.js';
 import { requireSession } from './middleware.js';
+
+const GUEST_HOURS = 2;
 
 const credentials = z.object({
   email: z.email().transform((email) => email.toLowerCase()),
@@ -35,6 +39,29 @@ export function authRouter() {
 
     issueSession(res, user.toSession());
     res.json({ user: user.toSession() });
+  });
+
+  // What the sign-in page can offer.
+  router.get('/options', (req, res) => {
+    res.json({ guests: config.demo.guests });
+  });
+
+  // Visitors of the public demo try OpsPilot without an account. A guest session isn't
+  // stored anywhere and ends after two hours; its role only reaches the demo sandbox.
+  const guestLimiter = rateLimit({
+    windowMs: 60 * 60_000,
+    limit: 20,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { error: 'too many guest sessions from here, try again later' },
+  });
+
+  router.post('/guest', guestLimiter, (req, res) => {
+    if (!config.demo.guests) throw new HttpError(404, 'guest access is off');
+    const id = randomBytes(4).toString('hex');
+    const user = { id: `guest-${id}`, email: null, name: `Guest ${id.slice(0, 4)}`, role: 'guest' };
+    issueSession(res, user, { hours: GUEST_HOURS });
+    res.json({ user });
   });
 
   router.post('/logout', (req, res) => {

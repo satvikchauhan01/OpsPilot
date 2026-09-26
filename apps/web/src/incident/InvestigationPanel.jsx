@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { canRespond, useAuth } from '../auth/AuthContext.jsx';
+import { canRespond, isResponder, useAuth } from '../auth/AuthContext.jsx';
 import { useAiStatus, useInvestigation, useStartInvestigation } from '../lib/queries.js';
 import { clock, duration, incidentId } from '../lib/format.js';
 import { ACTION_LABEL, CAUSE_LABEL } from '../lib/labels.js';
@@ -13,7 +13,7 @@ import styles from './InvestigationPanel.module.css';
 
 const STATUS_LABEL = { queued: 'Queued', running: 'Investigating', completed: 'Done', failed: 'Failed' };
 
-export function InvestigationPanel({ number }) {
+export function InvestigationPanel({ number, resolved }) {
   const { user } = useAuth();
   const ai = useAiStatus();
   const investigation = useInvestigation(number);
@@ -23,7 +23,8 @@ export function InvestigationPanel({ number }) {
 
   const run = investigation.data;
   const busy = run?.status === 'queued' || run?.status === 'running';
-  const canStart = canRespond(user) && ai.data?.enabled && !busy;
+  // Guests can investigate live incidents only (the server says the same)
+  const canStart = canRespond(user) && ai.data?.enabled && !busy && (isResponder(user) || !resolved);
 
   const elapsed = run?.startedAt ? (run.finishedAt ? new Date(run.finishedAt) : now) - new Date(run.startedAt) : null;
   const meta = run

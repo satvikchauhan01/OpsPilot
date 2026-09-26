@@ -10,7 +10,7 @@ import { alertWords, causeWords, sentence } from './text.js';
  * to its callers look the same in almost every incident, and listing them made unrelated
  * incidents look alike and buried the one symptom that tells them apart.
  */
-export function describeIncident({ alerts, suspectedService, changesBefore = [], rootCause, fix }) {
+export function describeIncident({ alerts, suspectedService, changesBefore = [], rootCause, fix, postmortem }) {
   const origin = suspectedService ?? alerts[0]?.service;
   const own = unique(alerts.filter((alert) => alert.service === origin).map((alert) => alertWords(alert.name)));
   const others = unique(alerts.filter((alert) => alert.service !== origin).map((alert) => alert.service));
@@ -22,6 +22,7 @@ export function describeIncident({ alerts, suspectedService, changesBefore = [],
     lines.push(`Root cause: ${causeWords(rootCause.causeType)} in ${rootCause.service}. ${sentence(rootCause.title)}`);
   }
   if (fix) lines.push(`Fixed by: ${sentence(fix)}`);
+  if (postmortem) lines.push(`Postmortem: ${postmortem}`);
   return lines.join('\n');
 }
 

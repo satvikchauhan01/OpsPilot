@@ -1,32 +1,41 @@
 import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router';
+import { Navigate, useLocation } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../lib/api.js';
 import { useAuth } from './AuthContext.jsx';
 import { BrandMark } from '../components/BrandMark.jsx';
 import styles from './LoginPage.module.css';
 
 export function LoginPage() {
-  const { user, login } = useAuth();
-  const navigate = useNavigate();
+  const { user, login, loginAsGuest } = useAuth();
+  const options = useQuery({ queryKey: ['auth-options'], queryFn: api.authOptions, staleTime: Infinity });
   const location = useLocation();
   const [error, setError] = useState(null);
   const [pending, setPending] = useState(false);
+  const [next, setNext] = useState(null);
 
-  const destination = location.state?.from?.pathname ?? '/';
+  const destination = next ?? location.state?.from?.pathname ?? '/';
   if (user) return <Navigate to={destination} replace />;
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+  // A successful sign-in re-renders this page with a user, and the redirect above takes over.
+  // Guests start on the demo page.
+  async function signIn(attempt, then = null) {
+    setNext(then);
     setPending(true);
     setError(null);
     try {
-      await login(form.get('email'), form.get('password'));
-      navigate(destination, { replace: true });
+      await attempt();
     } catch (err) {
       setError(err.message);
     } finally {
       setPending(false);
     }
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    signIn(() => login(form.get('email'), form.get('password')));
   }
 
   return (
@@ -62,6 +71,24 @@ export function LoginPage() {
             {pending ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+
+        {options.data?.guests && (
+          <div className={styles.guest}>
+            <span className={styles.or}>or</span>
+            <button
+              type="button"
+              className={styles.guestButton}
+              disabled={pending}
+              onClick={() => signIn(loginAsGuest, '/demo')}
+            >
+              Try the demo as a guest
+            </button>
+            <p className={styles.guestNote}>
+              No account needed. Break the demo shop and watch OpsPilot work the incident. A guest session lasts 2
+              hours.
+            </p>
+          </div>
+        )}
       </section>
 
       <SignalTrace />

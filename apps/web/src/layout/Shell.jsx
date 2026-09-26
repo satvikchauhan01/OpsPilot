@@ -38,6 +38,7 @@ export function Shell() {
     'g i': () => navigate('/incidents'),
     'g r': () => navigate('/runbooks'),
     'g a': () => navigate('/audit'),
+    'g d': () => navigate('/demo'),
     t: toggle,
     '?': () => setHelpOpen(true),
   });
@@ -65,6 +66,9 @@ export function Shell() {
           </NavLink>
           <NavLink to="/audit" className={styles.navLink}>
             Audit log
+          </NavLink>
+          <NavLink to="/demo" className={styles.navLink}>
+            Demo
           </NavLink>
         </nav>
 

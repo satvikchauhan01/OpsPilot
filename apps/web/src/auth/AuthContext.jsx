@@ -26,13 +26,28 @@ export function AuthProvider({ children }) {
     queryClient.setQueryData(['me'], user);
   }
 
-  async function logout() {
-    await api.logout();
-    queryClient.clear();
-    queryClient.setQueryData(['me'], null);
+  async function loginAsGuest() {
+    const { user } = await api.guest();
+    queryClient.setQueryData(['me'], user);
   }
 
-  const value = { user: session.data ?? null, loading: session.isPending, error: session.error, login, logout };
+  // Signed out first, then everything the previous user could see is dropped. Clearing the
+  // whole cache instead would also drop the query this provider watches, and it would never
+  // hear that nobody is signed in any more.
+  async function logout() {
+    await api.logout();
+    queryClient.setQueryData(['me'], null);
+    queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== 'me' });
+  }
+
+  const value = {
+    user: session.data ?? null,
+    loading: session.isPending,
+    error: session.error,
+    login,
+    loginAsGuest,
+    logout,
+  };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
@@ -40,8 +55,15 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Responders and admins can change incidents; viewers can only look.
+// Responders and admins can change incidents, and so can guests, since everything a guest
+// can reach is the demo shop. Viewers can only look.
 export function canRespond(user) {
+  return ['responder', 'admin', 'guest'].includes(user?.role);
+}
+
+// Postmortems speak for the team and a demo reset cuts short someone else's scenario, so
+// those stay with the team's own responders.
+export function isResponder(user) {
   return user?.role === 'responder' || user?.role === 'admin';
 }
 

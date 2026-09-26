@@ -32,6 +32,8 @@ const incidentMemorySchema = new mongoose.Schema(
       changes: { type: [String], default: [] },
       by: String,
     },
+    // The final postmortem, once the team has signed it off
+    postmortem: String,
     text: { type: String, required: true },
     embedding: { type: [Number], required: true },
     // Memories written by an older version of the wording are rewritten on startup

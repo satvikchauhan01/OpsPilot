@@ -7,7 +7,7 @@ import { createPrometheus } from './telemetry/prometheus.js';
 import { createLoki } from './telemetry/loki.js';
 import { createTempo } from './telemetry/tempo.js';
 import { createTopologyCache } from './topology/service.js';
-import { createExecutorClient, createKubeClient } from './kube/client.js';
+import { createDemoClient, createExecutorClient, createKubeClient } from './kube/client.js';
 import { startChangeTracker } from './changes/tracker.js';
 import { createIncidentService } from './incidents/service.js';
 import { startLifecycle } from './incidents/lifecycle.js';
@@ -18,6 +18,8 @@ import { createMemoryService } from './knowledge/memory.js';
 import { createAuditLog } from './audit/log.js';
 import { createExecutor } from './remediation/executor.js';
 import { createRemediationService } from './remediation/service.js';
+import { createPostmortemService } from './postmortems/service.js';
+import { createDemoService } from './demo/service.js';
 
 if (config.sessionSecretIsEphemeral)
   logger.warn('SESSION_SECRET is not set, so sessions end whenever the server restarts');
@@ -64,6 +66,13 @@ const remediation = createRemediationService({ executor, prometheus, incidents, 
 await remediation.failInterrupted();
 remediation.start();
 
+const postmortems = createPostmortemService({ llm, prometheus, incidents, investigations, remediation, config });
+await postmortems.redraftInterrupted();
+postmortems.start();
+
+const demo = createDemoService({ client: createDemoClient(config.kube, config.demo.token), config });
+demo.start();
+
 const app = createApp({
   config,
   prometheus,
@@ -75,6 +84,8 @@ const app = createApp({
   memory,
   remediation,
   audit,
+  postmortems,
+  demo,
 });
 const server = app.listen(config.port, () =>
   logger.info({ port: config.port, model: llm?.model }, 'OpsPilot server listening'),

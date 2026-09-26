@@ -2,14 +2,14 @@
 
 An AI incident-response copilot for Kubernetes. OpsPilot watches a running system and turns
 alerts into incidents. It works out what changed and why things broke, then proposes a fix.
-Once a human approves, it runs the fix, checks that it worked, and writes the postmortem.
+Once a human approves, it runs the fix, checks that it worked, and drafts the postmortem.
 
-> **Status: Phase 5 of 6.** Alerts become incidents with a timeline, a blast radius and a
-> live AI investigation. OpsPilot proposes the fix, runs it once a responder approves, and
-> verifies it against the incident's metrics. See the [roadmap](docs/ROADMAP.md) for what
-> comes next, and the [requirements](docs/REQUIREMENTS.md) for the full scope.
+It comes with a small online shop to watch, and a demo page where anyone can break that
+shop in one of four ways and follow OpsPilot through the incident.
 
-## What it does today
+![A live incident in OpsPilot: the AI's root cause with the evidence behind each claim, and the fix it proposes, waiting for approval](docs/screenshots/incident.png)
+
+## What it does
 
 1. **Detects.** Alertmanager sends alerts to OpsPilot, which groups related alerts into one
    incident using the service dependency graph.
@@ -25,13 +25,49 @@ Once a human approves, it runs the fix, checks that it worked, and writes the po
    what fixed them, and the agent reads both as evidence.
 5. **Fixes, with approval.** From the root cause it proposes one of three actions (roll back,
    rolling restart, scale to 1–6 replicas) with the reason and the runbook section behind
-   it. Nothing runs until a responder approves. The fix then runs as a service account that
-   can only read and patch Deployments in the shop's namespace. Afterwards OpsPilot watches the
+   it. Nothing runs until a person approves. The fix then runs as a service account that can
+   only read and patch Deployments in the shop's namespace. Afterwards OpsPilot watches the
    incident's error rate, latency, memory and saturation for three minutes before calling it
    verified. Every step lands in an append-only audit log whose records are chained by hash.
-6. **Shows it live.** A React console streams all of this as it happens: charts synced with
+6. **Writes it up.** When the incident is resolved, OpsPilot drafts a blameless postmortem:
+   the facts (times, impact, timeline, fix) come straight from the incident's data, and the
+   AI writes the summary, the lessons and the action items around them. The team edits it,
+   exports it as Markdown and marks it final, and the final version goes into incident
+   memory for the next investigation to find.
+7. **Shows it live.** A React console streams all of this as it happens: charts synced with
    the timeline, an interactive dependency map, the investigation step by step, the fix's
-   rollout and verification, a searchable runbook library and the audit log.
+   rollout and verification, a searchable runbook library, the audit log and demo control.
+
+| | |
+|---|---|
+| ![Overview: service health, open incidents, the live service map and recent changes](docs/screenshots/overview.png) | ![Demo control: four ways to break the shop, one at a time](docs/screenshots/demo.png) |
+| ![The postmortem OpsPilot drafted, in the light theme](docs/screenshots/postmortem-light.png) | ![The incident page on a phone](docs/screenshots/mobile.png) |
+
+## Try the demo
+
+The public deployment has a **Try the demo as a guest** button on the sign-in page. A guest
+session lasts two hours and can do everything the demo needs: start a scenario, approve a
+fix, investigate a live incident. Postmortems and resets stay with the team's own
+responders.
+
+1. **Start a scenario** on the demo page. For a first run, pick S1, a bad release: checkout
+   1.4.2 goes out and fails every order with an expired coupon code.
+2. **Watch it get detected.** Within about two minutes the error-rate alerts fire, and the
+   incident appears on the demo page and in a banner at the top.
+3. **Read the investigation.** A minute later the AI starts. It reads the alerts, the
+   metrics, the changes, the logs, similar past incidents and the runbooks, then names the
+   root cause. Click any evidence tag (E1, E2…) to see the query and the result behind it.
+4. **Approve the fix.** OpsPilot proposes rolling checkout back to 1.4.1. Approving shows
+   once more what will happen, then the rollout's progress.
+5. **Watch it verify.** For three minutes OpsPilot measures every service of the incident
+   against its limits. Only the last minute decides.
+6. **Read the postmortem.** Once the alerts have been quiet for five minutes, the incident
+   resolves itself and the postmortem draft appears at the bottom of the incident page.
+
+The shop puts itself back 20 minutes after a scenario starts, whatever happened in between,
+and the next scenario can start 3 minutes after that. The other three scenarios are a
+memory leak (S2, fixed by a restart), a slow dependency (S3, a restart of payments) and a
+traffic spike (S4, scaling payments out).
 
 ## Architecture
 
@@ -50,24 +86,30 @@ Once a human approves, it runs the fix, checks that it worked, and writes the po
                                                    │     │    ▲        (+ Vector Search)
                                           Gemini API     │    └── runbooks/*.md, embedded
                                                          │        locally with transformers.js
-                            approved fixes, as the ──────┤
-                            opspilot-executor account    │ REST + live events (SSE)
-                            (patch Deployments only)     ▼
+                  approved fixes, as opspilot-executor ──┤
+                  demo scenarios, as opspilot-demo ──────┤ REST + live events (SSE)
+                  (each with its own narrow Role)        ▼
                                                   OpsPilot web console
 ```
+
+Locally, the shop and the observability stack run in minikube, while the server and the
+console run on the host. In the cloud, everything runs in one k3s cluster, behind Traefik
+with a Let's Encrypt certificate ([DEPLOYMENT.md](docs/DEPLOYMENT.md)).
 
 ## Repository layout
 
 ```
 apps/server/   OpsPilot API: ingestion, correlation, change tracking, AI investigation,
                runbook search and incident memory (src/knowledge/), fixes and their
-               verification (src/remediation/), and the audit log (src/audit/)
-apps/web/      OpsPilot console (React)
+               verification (src/remediation/), the audit log (src/audit/), postmortems
+               (src/postmortems/) and demo control (src/demo/)
+apps/web/      OpsPilot console (React), and the nginx that serves it in the cloud
 demo/          the online shop that OpsPilot watches, plus its load generator
-deploy/k8s/    Kustomize manifests: base/ for everything, overlays/local/ for minikube
-docs/          requirements, roadmap and AI evaluation results
+deploy/k8s/    Kustomize manifests: base/ for everything, overlays/local/ for minikube,
+               overlays/cloud/ for the public k3s deployment
+docs/          requirements, roadmap, deployment guide, acceptance record, AI evaluation
 runbooks/      the shop's runbooks in Markdown, indexed by OpsPilot on every start
-scripts/       local cluster, failure scenarios, dev runner and evaluation
+scripts/       local cluster, failure scenarios, dev runner, evaluation and cloud deploy
 ```
 
 ## Running it locally
@@ -87,10 +129,12 @@ npm run cluster:up
 npm run dev
 ```
 
-`cluster:up` creates the cluster, deploys the shop and the observability stack, generates
-the two internal secrets in `.env`, and copies the fix executor's service-account token
-there as `KUBE_EXECUTOR_TOKEN`. `dev` starts the API on :4000 and the console on
-http://localhost:5173. Sign in with the admin account from `.env`.
+`cluster:up` creates the cluster, deploys the shop and the observability stack, and
+generates the two internal secrets in `.env`. It also copies the tokens of OpsPilot's two
+service accounts there: `KUBE_EXECUTOR_TOKEN` runs approved fixes, and `KUBE_DEMO_TOKEN`
+drives the demo page. `dev` starts the API on :4000 and the console on
+http://localhost:5173. Sign in with the admin account from `.env`, or set `DEMO_MODE=true`
+to get the guest button too.
 
 On its first start the server downloads the embedding model (about 23 MB, cached
 afterwards) and creates two Atlas Vector Search indexes, which takes a minute or two. Until
@@ -113,6 +157,9 @@ file has a little front matter (services, alerts, cause types, recommended actio
 
 ## Breaking things on purpose
 
+The demo page (`g d`) starts the scenarios from the console. They also work from the
+command line:
+
 ```bash
 npm run scenario -- list
 ```
@@ -124,10 +171,18 @@ npm run scenario -- list
 | `payments-latency` | payments hangs, and checkout times out waiting for it | payments is the slow dependency, restart |
 | `traffic-spike` | flash-sale traffic exhausts payments' processor connections | payments is saturated, scale up |
 
-Within about three minutes an incident opens in the console, and about a minute later the
-investigation starts. When it has found the root cause, the incident page shows the fix
-OpsPilot proposes. Approve it as a responder and watch it roll out, then pass or fail its
-three-minute verification. `npm run scenario -- reset` puts everything back.
+`npm run scenario -- reset` puts everything back.
+
+## Deploying it
+
+The public deployment is one free VM running k3s. Traefik serves the site over HTTPS, and
+only the console and its API are reachable from outside. [DEPLOYMENT.md](docs/DEPLOYMENT.md)
+walks through the VM, the domain and the settings. After that it's two commands:
+
+```bash
+npm run cloud -- setup    # once: Docker and k3s on the VM
+npm run cloud -- deploy   # builds the images on the VM and deploys everything
+```
 
 ## Checks
 
@@ -136,3 +191,8 @@ npm test            # unit tests
 npm run lint        # ESLint
 npm run evaluate    # runs every scenario 5 times and scores the AI (writes docs/evaluation.md)
 ```
+
+[REQUIREMENTS.md](docs/REQUIREMENTS.md) defines what "done" means, the
+[roadmap](docs/ROADMAP.md) records how each phase was verified, and
+[acceptance.md](docs/acceptance.md) maps every requirement to its evidence. The AI's
+accuracy per scenario is in [evaluation.md](docs/evaluation.md).

@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - executor.yaml
+  - demo.yaml

@@ -220,10 +220,18 @@
     padding: var(--space-2) var(--space-4) 0;
   }
 
+  /* Five links don't fit a phone's width, so the row scrolls sideways */
   .nav {
     order: 3;
     width: 100%;
     height: 40px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .navLink {
+    padding: 0 var(--space-2);
+    white-space: nowrap;
   }
 
   .navLink:first-child {

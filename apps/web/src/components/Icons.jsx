@@ -60,3 +60,11 @@ export function ArrowRightIcon(props) {
     </Icon>
   );
 }
+
+export function DownloadIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+    </Icon>
+  );
+}

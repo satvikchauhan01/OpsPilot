@@ -1,0 +1,34 @@
+# The only way in from the internet: HTTPS on one domain, with the API under /api and the
+# console everywhere else. Traefik gets the certificate from Let's Encrypt (traefik.yaml).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opspilot
+  namespace: opspilot
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - DOMAIN
+  rules:
+    - host: DOMAIN
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: opspilot-server
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opspilot-web
+                port:
+                  name: http

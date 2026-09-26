@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { parse } from '../http/errors.js';
 import { requireRole } from '../auth/middleware.js';
+import { actorOf } from '../auth/session.js';
 import { SEVERITIES } from '../alerts/severity.js';
 import { blastRadius, buildGraph } from '../topology/graph.js';
 import { loadTopology } from '../topology/service.js';
@@ -76,9 +77,9 @@ export function incidentsRouter({ incidents, investigations, runbooks, memory, r
     res.json(await memory.similar(incident));
   });
 
-  router.post('/:number/status', requireRole('responder'), async (req, res) => {
+  router.post('/:number/status', requireRole('responder', 'guest'), async (req, res) => {
     const { status, note } = parse(statusChange, req.body);
-    const incident = await incidents.changeStatus(number(req), status, { by: req.user.email, note });
+    const incident = await incidents.changeStatus(number(req), status, { by: actorOf(req.user), note });
     res.json(incident.toJSON());
   });
 

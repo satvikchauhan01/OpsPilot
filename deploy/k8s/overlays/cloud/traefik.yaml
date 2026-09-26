@@ -1,0 +1,24 @@
+# k3s runs Traefik as its ingress controller and takes extra chart values from this resource.
+# They add a Let's Encrypt resolver that answers the HTTP-01 challenge on port 80, keep the
+# certificates on a volume so a restart doesn't ask for new ones (Let's Encrypt limits how
+# often it issues them), and send plain HTTP visitors to HTTPS. The Local traffic policy keeps
+# each visitor's own address on the connection, which the server's rate limits go by.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    service:
+      spec:
+        externalTrafficPolicy: Local
+    persistence:
+      enabled: true
+      size: 128Mi
+    additionalArguments:
+      - --certificatesresolvers.letsencrypt.acme.storage=/data/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --entrypoints.web.http.redirections.entrypoint.to=:443
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true

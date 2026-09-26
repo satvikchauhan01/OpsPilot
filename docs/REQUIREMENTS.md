@@ -155,6 +155,9 @@ OpsPilot needs a real system to watch and repair. The demo system is a small onl
   a reason that links back to the RCA and the runbook.
 - **RM-3 Human approval.** An action runs only after a signed-in user with the responder
   role approves it. Rejections are stored with their reason.
+  *Changed in Phase 6:* in public demo mode a guest may approve as well. Guests only ever
+  reach the demo shop, which resets itself, and without this a visitor couldn't see a fix
+  through (DP-4). The audit log records the guest's session name as the approver.
 - **RM-4 Least privilege.** The executor's Kubernetes service account can only get, list,
   watch and patch Deployments (including the scale subresource) in the demo namespace.
   *Check:* `kubectl auth can-i` shows it cannot touch any other namespace or resource type.

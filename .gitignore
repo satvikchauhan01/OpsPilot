@@ -6,6 +6,9 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.cloud.example
+# written by scripts/cloud.mjs for each deploy
+deploy/k8s/overlays/cloud/deploy.env
 
 *.log
 .DS_Store

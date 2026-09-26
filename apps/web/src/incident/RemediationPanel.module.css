@@ -138,6 +138,7 @@
 .secondary,
 .danger {
   height: 32px;
+  white-space: nowrap;
   padding: 0 14px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);

@@ -20,6 +20,7 @@
     "cluster:down": "node scripts/cluster.mjs down",
     "cluster:status": "node scripts/cluster.mjs status",
     "scenario": "node scripts/scenario.mjs",
+    "cloud": "node scripts/cloud.mjs",
     "evaluate": "node scripts/evaluate.mjs"
   },
   "devDependencies": {

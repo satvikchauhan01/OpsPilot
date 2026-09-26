@@ -1,6 +1,6 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import { logger } from '../logger.js';
-import { DIMENSIONS } from './embeddings.js';
+import { DIMENSIONS } from './embedding-model.js';
 
 const READY_TIMEOUT_MS = 3 * 60_000;
 

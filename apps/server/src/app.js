@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import { handleApiNotFound, handleErrors } from './http/errors.js';
+import { sameOriginOnly } from './http/origin.js';
 import { requireSession } from './auth/middleware.js';
 import { authRouter } from './auth/routes.js';
 import { usersRouter } from './auth/users.js';
@@ -16,6 +17,8 @@ import { aiStatusRouter, investigationsRouter } from './investigation/routes.js'
 import { runbooksRouter } from './knowledge/routes.js';
 import { actionsRouter, incidentActionsRouter, remediationStatusRouter } from './remediation/routes.js';
 import { auditRouter } from './audit/routes.js';
+import { postmortemRouter } from './postmortems/routes.js';
+import { demoRouter } from './demo/routes.js';
 
 export function createApp(context) {
   const app = express();
@@ -24,7 +27,11 @@ export function createApp(context) {
   app.set('trust proxy', context.config.isProduction ? 1 : false);
 
   app.use(helmet());
-  app.use(express.json({ limit: '2mb' }));
+  app.use('/api', sameOriginOnly(context.config.publicOrigin));
+  // Alertmanager can batch many alerts into one call; nothing else sends more than a
+  // postmortem's worth of text.
+  app.use('/api/webhooks', express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
 
   app.get('/api/health', (req, res) => {
@@ -40,6 +47,7 @@ export function createApp(context) {
   app.use('/api/stream', streamRouter());
   app.use('/api/incidents/:number/investigations', investigationsRouter(context));
   app.use('/api/incidents/:number/actions', incidentActionsRouter(context));
+  app.use('/api/incidents/:number/postmortem', postmortemRouter(context));
   app.use('/api/incidents', incidentsRouter(context));
   app.use('/api/actions', actionsRouter(context));
   app.use('/api/remediation', remediationStatusRouter(context));
@@ -49,6 +57,7 @@ export function createApp(context) {
   app.use('/api/topology', topologyRouter(context));
   app.use('/api/changes', changesRouter(context));
   app.use('/api/runbooks', runbooksRouter(context));
+  app.use('/api/demo', demoRouter(context));
   app.use('/api/users', usersRouter(context));
 
   app.use('/api', handleApiNotFound);

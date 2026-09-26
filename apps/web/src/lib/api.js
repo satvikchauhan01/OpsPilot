@@ -29,6 +29,8 @@ export const api = {
   me: () => request('/auth/me'),
   login: (email, password) => request('/auth/login', { method: 'POST', body: { email, password } }),
   logout: () => request('/auth/logout', { method: 'POST' }),
+  authOptions: () => request('/auth/options'),
+  guest: () => request('/auth/guest', { method: 'POST' }),
 
   services: () => request('/services'),
   topology: () => request('/topology'),
@@ -61,4 +63,14 @@ export const api = {
   aiStatus: () => request('/ai'),
   investigation: (number, id = 'latest') => request(`/incidents/${number}/investigations/${id}`),
   startInvestigation: (number) => request(`/incidents/${number}/investigations`, { method: 'POST' }),
+
+  postmortem: (number) => request(`/incidents/${number}/postmortem`),
+  draftPostmortem: (number) => request(`/incidents/${number}/postmortem`, { method: 'POST' }),
+  savePostmortem: (number, markdown) =>
+    request(`/incidents/${number}/postmortem`, { method: 'PUT', body: { markdown } }),
+  finalizePostmortem: (number) => request(`/incidents/${number}/postmortem/finalize`, { method: 'POST' }),
+
+  demo: () => request('/demo'),
+  startScenario: (key) => request(`/demo/scenarios/${key}`, { method: 'POST' }),
+  resetDemo: () => request('/demo/reset', { method: 'POST' }),
 };

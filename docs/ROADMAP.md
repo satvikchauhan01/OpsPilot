@@ -10,8 +10,8 @@ only after the current one has been committed. IDs such as `DS-5` refer to
 | 2 | Incident core: ingestion, correlation, changes, timeline, topology, UI shell | Done |
 | 3 | AI investigation and root-cause analysis | Done |
 | 4 | Knowledge: runbook RAG and incident memory | Done |
-| 5 | Remediation: approval, execution, verification | Done, in review |
-| 6 | Postmortems, hardening and public deployment | Not started |
+| 5 | Remediation: approval, execution, verification | Done |
+| 6 | Postmortems, hardening and public deployment | Done locally, waiting for the VM to deploy |
 
 ---
 
@@ -282,16 +282,54 @@ earlier occurrence.
 
 **Goal:** close the incident loop and put OpsPilot on the internet.
 
-- [ ] Postmortem generation, editing and Markdown export — PM-1 to PM-3
-- [ ] Public demo mode with guest sessions, cooldowns and auto-reset — DP-4, SE-1
-- [ ] Security pass covering rate limits, headers, CORS, validation and exposure — SE-3 to SE-6
-- [ ] Container images for the server and web apps — DP-1
-- [ ] `cloud` Kustomize overlay with persistent volumes, ingress and TLS — DP-2, DP-3, DP-5
+- [x] Postmortem generation, editing and Markdown export — PM-1 to PM-3
+- [x] Public demo mode with guest sessions, cooldowns and auto-reset — DP-4, SE-1
+- [x] Security pass covering rate limits, headers, CORS, validation and exposure — SE-3 to SE-6
+- [x] Container images for the server and web apps — DP-1
+- [x] `cloud` Kustomize overlay with persistent volumes, ingress and TLS — DP-2, DP-3, DP-5
 - [ ] Deploy to a free VM running k3s — C-8, DP-2
-- [ ] README with architecture, screenshots and a walkthrough, plus final lint and tests — QA-2 to QA-4
-- [ ] Full acceptance run against REQUIREMENTS.md — Definition of done
+- [x] README with architecture, screenshots and a walkthrough, plus final lint and tests — QA-2 to QA-4
+- [x] Full acceptance run against REQUIREMENTS.md, locally — Definition of done ([acceptance.md](acceptance.md))
 
 **Exit criteria:** the Definition of Done in REQUIREMENTS.md is met.
 
 **Needs from you:** a VM (Oracle Cloud Always Free is the best fit, and Azure for Students
 works if you can't add a card) and a free domain or subdomain.
+
+**Verification (2026-09-26, locally):** each requirement and its proof is listed in
+[acceptance.md](acceptance.md). The main checks:
+
+- PM-1 to PM-3: S1, started from the demo page by a guest, became INC-40. The guest approved
+  the rollback, and it was verified. Once INC-40 resolved, `gemini-3.5-flash-lite` drafted
+  its postmortem around the facts from its data. As a responder in the browser, the draft
+  was edited, previewed, saved, exported as `INC-040-postmortem.md` and made final. Incident
+  memory was rewritten within a second with the final text, and its summary joined the
+  embedded description. Guests and viewers can read postmortems but not edit them (`403`).
+- DP-4 and SE-1: guest sessions (2 h, one click) only exist with `DEMO_MODE=true`. With a
+  1-minute timer: a second scenario while one ran got `409`, the shop reset itself after a
+  minute, and a scenario during the cooldown got `409`. After a reset, checkout was back on
+  1.4.1, leaked memory was restarted away, and the load generator was back to its
+  baseline. Guests get `403` on postmortem edits, demo resets, the user list, and
+  re-investigating resolved incidents.
+- S3 ran from the demo page too (INC-41). The AI named payments / `slow_dependency` in 6
+  model calls and proposed a restart, which a guest approved.
+- The demo control acts through its own `opspilot-demo` service account. It may patch the
+  shop's Deployments and reach shop and load-generator pods through the API proxy, and
+  nothing else. The executor moved to the `opspilot` namespace next to it, and RM-4's
+  `kubectl auth can-i` checks still hold.
+- SE-3 to SE-6: no secret in the history. Rate limits count guests by address, and only
+  requests that go through. Changes from another origin get `403`. The console runs under a
+  strict CSP with no violations. The rendered cloud overlay exposes nothing but its Ingress.
+- DP-1: both images are multi-stage and run as non-root users with a read-only root
+  filesystem. The server image carries the embedding model and only the Linux CPU build of
+  ONNX Runtime (719 MB instead of 1.7 GB).
+- Found and fixed along the way: signing out didn't return to the sign-in page, because
+  the whole query cache was cleared, including the query the auth provider watches. A
+  postmortem draft could stay "being written" forever if the server restarted mid-draft.
+  Drafts are now marked at once and picked up again on start. Pre-incident changes to
+  unrelated services, or from more than 15 minutes before, are left out of postmortem
+  timelines.
+- QA: 108 unit tests pass (14 new), `npm run lint` is clean, and the console builds.
+
+**Still to do:** the public deployment ([DEPLOYMENT.md](DEPLOYMENT.md)) and its checks:
+C-8, DP-2, DP-3, DP-5 (a VM reboot), and the full demo on the public URL.

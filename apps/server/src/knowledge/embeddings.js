@@ -1,18 +1,12 @@
-import { pipeline } from '@huggingface/transformers';
 import { logger } from '../logger.js';
-
-// Embeddings are computed on the server's own CPU: no API key, no quota, and the same text
-// always gets the same vector. all-MiniLM-L6-v2 is small (about 23 MB quantized), fast, and
-// good at matching short passages. The model is downloaded once and cached on disk.
-const MODEL = 'Xenova/all-MiniLM-L6-v2';
-export const DIMENSIONS = 384;
+import { loadEmbeddingModel } from './embedding-model.js';
 
 let loading = null;
 
 function loadModel() {
-  loading ??= pipeline('feature-extraction', MODEL, { dtype: 'q8' })
+  loading ??= loadEmbeddingModel()
     .then((extractor) => {
-      logger.info({ model: MODEL }, 'embedding model loaded');
+      logger.info('embedding model loaded');
       return extractor;
     })
     .catch((err) => {

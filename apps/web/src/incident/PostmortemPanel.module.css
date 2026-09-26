@@ -1,0 +1,221 @@
+.stack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.byline {
+  font: 400 12px/1.5 var(--font-mono);
+  color: var(--ink-3);
+}
+
+.notice,
+.final,
+.error {
+  padding: var(--space-2) var(--space-3);
+  font-size: 13px;
+  max-width: 76ch;
+}
+
+.notice {
+  border-left: 3px solid var(--warning);
+  background: var(--warning-wash);
+}
+
+.final {
+  border-left: 3px solid var(--ok);
+  background: var(--ok-wash);
+}
+
+.error {
+  border-left: 3px solid var(--critical);
+  background: var(--critical-wash);
+}
+
+.muted {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+/* The postmortem reads as a document: one narrow column, sections set apart by rules */
+.document {
+  max-width: 76ch;
+}
+
+.document h3 {
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.document h4 {
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  font: 500 11px/1.2 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.document :global(.contains-task-list) {
+  padding-left: 0;
+  list-style: none;
+}
+
+.document input[type='checkbox'] {
+  margin: 0 var(--space-2) 0 0;
+  vertical-align: -2px;
+  accent-color: var(--ink);
+}
+
+.writing {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-4) 0;
+}
+
+.writingTitle {
+  font-weight: 600;
+}
+
+.pulse {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--signal);
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  white-space: nowrap;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.secondary {
+  background: var(--surface);
+  color: var(--ink-2);
+}
+
+.secondary:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.primary:hover:not(:disabled) {
+  border-color: var(--signal);
+  background: var(--signal);
+  color: #fff;
+}
+
+.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.confirm {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 70ch;
+  padding: var(--space-3);
+  border: 1px solid var(--signal);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.editor {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  height: 32px;
+  margin-bottom: -1px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ink-3);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--signal);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.count {
+  margin-left: auto;
+  padding-bottom: var(--space-2);
+  font: 400 11px/1 var(--font-mono);
+  color: var(--ink-3);
+}
+
+.count[data-over] {
+  color: var(--critical);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 360px;
+  padding: var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--inset);
+  font: 400 13px/1.6 var(--font-mono);
+  resize: vertical;
+}
+
+.preview {
+  min-height: 360px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.35;
+  }
+}

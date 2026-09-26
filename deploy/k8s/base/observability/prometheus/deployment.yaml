@@ -26,6 +26,8 @@ spec:
             - --config.file=/etc/prometheus/prometheus.yml
             - --storage.tsdb.path=/prometheus
             - --storage.tsdb.retention.time=3d
+            # whichever comes first, so the 5 GiB volume never fills up
+            - --storage.tsdb.retention.size=4GB
             - --web.enable-lifecycle
           ports:
             - name: http

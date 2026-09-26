@@ -1,7 +1,9 @@
 import { Incident } from '../models/incident.js';
 import { IncidentMemory } from '../models/incident-memory.js';
 import { Action } from '../models/action.js';
+import { Postmortem } from '../models/postmortem.js';
 import { describeDone } from '../remediation/catalog.js';
+import { sectionOf } from '../postmortems/document.js';
 import { HttpError } from '../http/errors.js';
 import { bus } from '../realtime/bus.js';
 import { logger } from '../logger.js';
@@ -30,7 +32,15 @@ export function createMemoryService({ namespace }) {
 
     const context = await incidentContext(incident, namespace);
     const fix = await fixOf(incident, context.rootCause);
-    const text = describeIncident({ ...context, suspectedService: incident.suspectedService, fix: fix.summary });
+    // Only a postmortem the team signed off on becomes part of what OpsPilot remembers.
+    const postmortem = await Postmortem.findOne({ incident: incident._id, status: 'final' }).lean();
+    const lessons = postmortem ? sectionOf(postmortem.markdown, 'Summary') : undefined;
+    const text = describeIncident({
+      ...context,
+      suspectedService: incident.suspectedService,
+      fix: fix.summary,
+      postmortem: lessons,
+    });
 
     await IncidentMemory.replaceOne(
       { incident: incident._id },
@@ -48,6 +58,7 @@ export function createMemoryService({ namespace }) {
         rootCause: context.rootCause,
         summary: context.summary,
         fix,
+        postmortem: postmortem?.markdown,
         text,
         embedding: await embedOne(text),
         version: MEMORY_VERSION,
@@ -96,6 +107,7 @@ export function createMemoryService({ namespace }) {
     bus.on('event', ({ type, data }) => {
       if (type === 'incident.updated' && data.status === 'resolved') rememberQueued(data.number);
       if (type === 'investigation.updated' && data.status === 'completed') rememberQueued(data.incidentNumber);
+      if (type === 'postmortem.updated' && data.status === 'final') rememberQueued(data.incidentNumber);
     });
 
     // Incidents resolved while OpsPilot was down, or remembered in an older wording.

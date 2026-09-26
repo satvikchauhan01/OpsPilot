@@ -26,6 +26,9 @@ const ENDPOINTS = [
   { name: 'Tempo', hostPort: 13200, nodePort: 30200, path: '/ready' },
 ];
 
+// .env settings filled from the token Secrets of OpsPilot's service accounts
+const SERVER_TOKENS = { KUBE_EXECUTOR_TOKEN: 'opspilot-executor-token', KUBE_DEMO_TOKEN: 'opspilot-demo-token' };
+
 const commands = { up, stop, down, status };
 const command = commands[process.argv[2]];
 
@@ -65,7 +68,7 @@ function up() {
   for (const namespace of NAMESPACES) {
     kubectl(['wait', '--for=condition=Available', 'deployment', '--all', '-n', namespace, '--timeout=300s']);
   }
-  connectExecutor();
+  saveServerTokens();
 
   printEndpoints();
 }
@@ -194,24 +197,18 @@ function connectAlertmanager() {
   kubectl(['apply', '-f', '-'], { input: JSON.stringify(secret) });
 }
 
-// OpsPilot runs approved fixes as its own least-privileged service account (see
-// deploy/k8s/base/opspilot). Kubernetes fills that account's token into a Secret; it is copied
-// into .env as KUBE_EXECUTOR_TOKEN, where the server picks it up.
-function connectExecutor() {
-  const encoded = kubectlOutput([
-    '-n',
-    'shop',
-    'get',
-    'secret',
-    'opspilot-executor-token',
-    '-o',
-    'jsonpath={.data.token}',
-  ]).trim();
-  if (!encoded) throw new Error('Kubernetes has not filled in the opspilot-executor token yet, run this again');
+// OpsPilot changes the cluster only through two narrow service accounts of its own (see
+// deploy/k8s/base/opspilot): one runs approved fixes, the other drives the demo scenarios.
+// Kubernetes fills each account's token into a Secret; they are copied into .env, where the
+// server picks them up.
 
-  const token = Buffer.from(encoded, 'base64').toString('utf8');
-  if (setEnvValue(path.join(ROOT, '.env'), 'KUBE_EXECUTOR_TOKEN', token)) {
-    console.log('Saved the executor token in .env as KUBE_EXECUTOR_TOKEN');
+function saveServerTokens() {
+  for (const [setting, secret] of Object.entries(SERVER_TOKENS)) {
+    const encoded = kubectlOutput(['-n', 'opspilot', 'get', 'secret', secret, '-o', 'jsonpath={.data.token}']).trim();
+    if (!encoded) throw new Error(`Kubernetes has not filled in ${secret} yet, run this again`);
+
+    const token = Buffer.from(encoded, 'base64').toString('utf8');
+    if (setEnvValue(path.join(ROOT, '.env'), setting, token)) console.log(`Saved ${secret} in .env as ${setting}`);
   }
 }
 

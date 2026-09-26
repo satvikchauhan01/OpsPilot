@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { useParams } from 'react-router';
 import { useIncident, useIncidentMetrics, useIncidentTopology, useTimeline } from '../lib/queries.js';
 import { useNow } from '../hooks/useNow.js';
@@ -14,6 +15,12 @@ import { RemediationPanel } from '../incident/RemediationPanel.jsx';
 import { SimilarIncidentsPanel } from '../incident/SimilarIncidentsPanel.jsx';
 import { RunbooksPanel } from '../incident/RunbooksPanel.jsx';
 import styles from './IncidentPage.module.css';
+
+// Only resolved incidents have a postmortem, and it brings a Markdown renderer, so it loads
+// when one is shown.
+const PostmortemPanel = lazy(() =>
+  import('../incident/PostmortemPanel.jsx').then((module) => ({ default: module.PostmortemPanel })),
+);
 
 export function IncidentPage() {
   const number = Number(useParams().number);
@@ -33,8 +40,19 @@ export function IncidentPage() {
     <HoverTimeProvider>
       <article className={styles.page}>
         <IncidentHeader incident={incident.data} now={now} />
-        <InvestigationPanel number={number} />
+        <InvestigationPanel number={number} resolved={incident.data.status === 'resolved'} />
         <RemediationPanel incident={incident.data} />
+        {incident.data.status === 'resolved' && (
+          <Suspense
+            fallback={
+              <Panel title="Postmortem">
+                <Loading label="Loading the postmortem" />
+              </Panel>
+            }
+          >
+            <PostmortemPanel incident={incident.data} />
+          </Suspense>
+        )}
 
         <div className={styles.layout}>
           <div className={styles.main}>
