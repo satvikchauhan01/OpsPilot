@@ -2,6 +2,7 @@ import { Alert } from '../models/alert.js';
 import { bus } from '../realtime/bus.js';
 import { logger } from '../logger.js';
 import { createSerialQueue } from '../lib/serial-queue.js';
+import { LlmOverloadedError } from '../llm/gemini.js';
 import { createTools } from './tools.js';
 import { FINDINGS_PARAMETERS, validateFindings } from './findings.js';
 import { briefing, systemPrompt } from './prompt.js';
@@ -63,19 +64,22 @@ export async function runInvestigation({ investigation, incident, llm, telemetry
       evidenceId: 'E1',
     });
 
-    const opening = await Promise.all(OPENING_TOOLS.map(([name, args]) => runTool(run, tools, name, args, 'context')));
+    // One after another, so the opening evidence always gets the same ids (E2, E3, E4).
+    for (const [name, args] of OPENING_TOOLS) await runTool(run, tools, name, args, 'context');
 
-    const contents = [
-      {
-        role: 'user',
-        parts: [
-          { text: briefing({ incident, alerts, heuristicSuspect: incident.suspectedService, now: anchor }) },
-          { text: formatEvidence(run.evidence()) },
-        ],
-      },
-    ];
+    // The briefing plus every piece of evidence gathered so far.
+    const opening = () => ({
+      role: 'user',
+      parts: [
+        { text: briefing({ incident, alerts, heuristicSuspect: incident.suspectedService, now: anchor }) },
+        { text: formatEvidence(run.evidence()) },
+      ],
+    });
+    const contents = [opening()];
     const system = systemPrompt({ services, maxToolCalls: LIMITS.toolCalls });
-    let toolCalls = opening.length;
+    let model = llm.pickModel();
+    if (model !== llm.model) await run.update({ model });
+    let toolCalls = OPENING_TOOLS.length;
     let invalidSubmissions = 0;
 
     for (let turn = 1; turn <= LIMITS.turns; turn += 1) {
@@ -84,13 +88,27 @@ export async function runInvestigation({ investigation, incident, llm, telemetry
         Date.now() - started > LIMITS.durationMs ||
         run.tokens() > LIMITS.tokens ||
         turn === LIMITS.turns;
-
-      const reply = await llm.generate({
+      const request = {
         system,
         contents,
         tools: [...tools.declarations, SUBMIT],
         allowedTools: outOfBudget ? ['submit_findings'] : undefined,
-      });
+      };
+
+      let reply;
+      try {
+        reply = await llm.generate({ ...request, model });
+      } catch (err) {
+        // Free-tier models get overloaded or run out of quota. The conversation can't simply move
+        // to another model, because its earlier turns carry signatures only the original model
+        // accepts. So the fallback starts a fresh conversation that already holds all the evidence.
+        if (!(err instanceof LlmOverloadedError) || !llm.fallbackModel || model === llm.fallbackModel) throw err;
+        await run.step({ kind: 'note', title: `${model} is unavailable, handing over to ${llm.fallbackModel}` });
+        model = llm.fallbackModel;
+        await run.update({ model });
+        contents.splice(0, contents.length, opening());
+        reply = await llm.generate({ ...request, model });
+      }
       await run.countUsage(reply.usage);
       contents.push(reply.message);
       if (reply.text) await run.step({ kind: 'note', title: reply.text.slice(0, 600) });
@@ -182,9 +200,10 @@ function createRecorder(investigation) {
     },
 
     async step(step) {
-      doc.steps.push({ at: new Date(), ...step });
+      // Take the index before awaiting: other steps may be added while this one saves.
+      const index = doc.steps.push({ at: new Date(), ...step }) - 1;
       await save();
-      return doc.steps.length - 1;
+      return index;
     },
 
     async completeStep(index, fields) {

@@ -87,6 +87,7 @@ async function evaluateOnce(scenario) {
       top: top
         ? { service: top.service, causeType: top.causeType, confidence: top.confidence, title: top.title }
         : null,
+      model: investigation.model,
       requests: investigation.usage?.requests ?? 0,
       evidence: investigation.evidence?.length ?? 0,
       seconds: Math.round((new Date(investigation.finishedAt) - new Date(investigation.startedAt)) / 1000),
@@ -177,7 +178,7 @@ function writeReport(rows) {
     'Requirement AI-6: for each failure scenario, the correct root cause (right service and right cause',
     'type) must be ranked first in at least 4 out of 5 runs. Produced by `npm run evaluate`.',
     '',
-    `Last run: ${new Date().toISOString()} · model ${process.env.GEMINI_MODEL ?? 'gemini-2.5-flash'}`,
+    `Last run: ${new Date().toISOString()} · models used: ${[...new Set(rows.map((row) => row.model).filter(Boolean))].join(', ') || 'none'}`,
     '',
     '| Scenario | Expected | Correct | Required | Result |',
     '|----------|----------|---------|----------|--------|',

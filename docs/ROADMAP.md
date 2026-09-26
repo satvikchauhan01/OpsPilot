@@ -6,9 +6,9 @@ only after the current one has been committed. IDs such as `DS-5` refer to
 
 | Phase | Theme | Status |
 |-------|-------|--------|
-| 1 | Foundation: demo system, Kubernetes, observability | Done, in review |
-| 2 | Incident core: ingestion, correlation, changes, timeline, topology, UI shell | Not started |
-| 3 | AI investigation and root-cause analysis | Not started |
+| 1 | Foundation: demo system, Kubernetes, observability | Done |
+| 2 | Incident core: ingestion, correlation, changes, timeline, topology, UI shell | Done, in review |
+| 3 | AI investigation and root-cause analysis | Done, in review |
 | 4 | Knowledge: runbook RAG and incident memory | Not started |
 | 5 | Remediation: approval, execution, verification | Not started |
 | 6 | Postmortems, hardening and public deployment | Not started |
@@ -55,22 +55,41 @@ everything to green within 5 minutes, and Grafana shows all four services.
 
 **Goal:** alerts turn into incidents with full context, and the UI shows them live.
 
-- [ ] `apps/server`: Express API, config, MongoDB Atlas connection and data models
-- [ ] Sign-in with roles and a seeded admin — SE-1, SE-2
-- [ ] Alertmanager webhook with a shared secret — IN-1
-- [ ] Correlation engine and incident lifecycle — IN-2, IN-3
-- [ ] Kubernetes change tracker for Deployments and warning events — IN-4
-- [ ] Incident timeline — IN-5
-- [ ] Dependency graph and blast radius from service-graph metrics — IN-6
-- [ ] Live updates with Server-Sent Events — IN-7
-- [ ] `apps/web`: design system, app shell, overview, incident list and incident detail
+- [x] `apps/server`: Express API, config, MongoDB connection and data models
+  (verified against a local MongoDB; switching to Atlas only needs the connection string in `.env`)
+- [x] Sign-in with roles and a seeded admin — SE-1, SE-2
+- [x] Alertmanager webhook with a shared secret — IN-1
+- [x] Correlation engine and incident lifecycle — IN-2, IN-3
+- [x] Kubernetes change tracker for Deployments and warning events — IN-4
+- [x] Incident timeline — IN-5
+- [x] Dependency graph and blast radius from service-graph metrics — IN-6
+- [x] Live updates with Server-Sent Events — IN-7
+- [x] `apps/web`: design system, app shell, overview, incident list and incident detail
   (timeline, topology, metrics) — UI-1 (partial), UI-2 to UI-5
-- [ ] Unit tests for correlation, blast radius and timeline merging — QA-1 (partial)
+- [x] Unit tests for correlation, blast radius and timeline merging — QA-1 (partial)
 
 **Exit criteria:** S1 and S3 each produce exactly one incident whose timeline and blast
 radius are correct, and the UI updates without a refresh.
 
 **Needs from you:** the MongoDB Atlas connection string (a free M0 cluster).
+
+**Verification (2026-09-25):**
+
+- IN-1: a webhook call with a wrong token gets `401` and nothing is stored.
+- IN-2: S1 produced one incident (checkout and gateway alerts). S3 produced one incident, INC-2,
+  whose five alerts on payments, checkout and gateway arrived within the same second.
+- IN-3: incidents move `open → investigating` when the AI starts and are resolved by responders
+  or automatically after 5 quiet minutes. Illegal transitions are refused.
+- IN-4: in S1 the timeline shows `checkout 1.4.1 → 1.4.2` (change-cause "release 1.4.2") at
+  16:31:52 and the rollout finishing 9 s later, before the first alert at 16:33:46.
+- IN-5: one timeline merges changes, Kubernetes events, alerts, status changes and AI runs.
+  Repeated probe warnings fold into single entries with a count (×14, ×9…).
+- IN-6: for INC-2 the map marks payments as the likely origin, with checkout and gateway
+  impacted and the failing calls animated.
+- IN-7: the new-incident banner, status line and service board updated live, without a refresh.
+- UI: overview, incident list (with `j`/`k`/Enter) and incident detail, in dark and light themes
+  and at 375 px. Every chart has a legend, a crosshair tooltip, keyboard reading and a table view.
+- QA-1 (partial): 50 unit tests pass (`npm test`), and `npm run lint` is clean.
 
 ---
 
@@ -78,17 +97,31 @@ radius are correct, and the UI updates without a refresh.
 
 **Goal:** every incident gets an evidence-backed root-cause analysis.
 
-- [ ] Gemini provider adapter with retries, backoff and a quota budget — C-4, AI-4
-- [ ] Telemetry tools: PromQL, LogQL, trace search, change history, workload status — AI-2
-- [ ] Investigator agent with a bounded loop and schema-validated output — AI-1, AI-3
-- [ ] Evidence model that links each claim to its query and result — AI-3
-- [ ] Streaming investigation view in the UI — AI-5
-- [ ] Scenario evaluation run recorded in `docs/evaluation.md` — AI-6, QA-5
+- [x] Gemini provider adapter with retries, backoff and a quota budget — C-4, AI-4
+- [x] Telemetry tools: PromQL, LogQL, trace search, change history, workload status — AI-2
+- [x] Investigator agent with a bounded loop and schema-validated output — AI-1, AI-3
+- [x] Evidence model that links each claim to its query and result — AI-3
+- [x] Streaming investigation view in the UI — AI-5
+- [x] Scenario evaluation run recorded in `docs/evaluation.md` — AI-6, QA-5
 
 **Exit criteria:** the correct root cause is ranked first for S1–S4 (at least 4 of 5 runs
 each).
 
 **Needs from you:** a Gemini API key from Google AI Studio (free, no card needed).
+
+**Verification (2026-09-26, `gemini-3.5-flash-lite`):**
+
+- AI-6: 18 of 20 runs ranked the right service and cause first: S1 5/5, S2 4/5, S3 4/5,
+  S4 5/5 (see [evaluation.md](evaluation.md)). Both misses named the right service with the
+  wrong cause type (`resource_saturation` instead of a leak or a slow dependency).
+- AI-1: each incident was investigated automatically about a minute after it opened, and the
+  incident moved to `investigating`. "Investigate again" starts a manual run.
+- AI-2 and AI-3: findings cite evidence ids that the validator checks against what was actually
+  queried. The UI opens each citation to show its tool, arguments and the exact result.
+- AI-4: the 20 investigations used 98 model calls in total (5 on average, 12 at most) and took
+  2–90 s each. When the primary model is overloaded or out of quota, the investigation hands
+  over to the fallback model, and the new model starts with all the evidence collected so far.
+- AI-5: steps stream into the incident page while the investigation runs.
 
 ---
 

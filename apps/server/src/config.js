@@ -37,7 +37,8 @@ const schema = z.object({
   AUTO_RESOLVE_MINUTES: z.coerce.number().positive().default(5),
 
   GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  GEMINI_MODEL: z.string().default('gemini-3.5-flash-lite'),
+  GEMINI_FALLBACK_MODEL: z.string().default('gemini-3.1-flash-lite'),
   LLM_REQUESTS_PER_MINUTE: z.coerce.number().int().positive().default(8),
   LLM_DAILY_REQUEST_BUDGET: z.coerce.number().int().positive().default(200),
   INVESTIGATION_DELAY_SECONDS: z.coerce.number().int().nonnegative().default(60),
@@ -81,6 +82,7 @@ export const config = {
   llm: {
     apiKey: env.GEMINI_API_KEY,
     model: env.GEMINI_MODEL,
+    fallbackModel: env.GEMINI_FALLBACK_MODEL || null,
     requestsPerMinute: env.LLM_REQUESTS_PER_MINUTE,
     dailyRequestBudget: env.LLM_DAILY_REQUEST_BUDGET,
     investigationDelayMs: env.INVESTIGATION_DELAY_SECONDS * 1000,

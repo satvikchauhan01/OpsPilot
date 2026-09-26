@@ -2,6 +2,7 @@ import { Change } from '../models/change.js';
 import { imageVersion } from '../changes/diff.js';
 import { serviceQueries } from '../topology/service.js';
 import { condenseTrace, groupLogs } from './condense.js';
+import { compare } from './health.js';
 
 // A tool result bigger than this gets its longest lists trimmed before the model sees it.
 const MAX_RESULT_CHARS = 7000;
@@ -35,19 +36,29 @@ export function createTools({ prometheus, loki, tempo, kube, namespace, anchor, 
           ),
         );
 
-        const services = {};
+        const values = {};
         metrics.forEach((metric, i) => {
-          for (const { labels, value } of current[i])
-            ((services[labels.service] ??= {})[metric] ??= {}).now = round(value);
-          for (const { labels, value } of earlier[i])
-            ((services[labels.service] ??= {})[metric] ??= {}).before = round(value);
+          for (const { labels, value } of current[i]) ((values[labels.service] ??= {})[metric] ??= {}).now = value;
+          for (const { labels, value } of earlier[i]) ((values[labels.service] ??= {})[metric] ??= {}).before = value;
         });
-        return {
-          now: anchor.toISOString(),
-          before: baseline.toISOString(),
-          units: 'rps in req/s, p95 in seconds, ratios 0-1',
-          services,
-        };
+
+        // The before/after comparison is spelled out (with the change computed) so that a
+        // model can't misread it: "memory 12% → 86% (+74 pts)" next to "requests 8.0 → 8.0/s (+0%)".
+        const services = Object.fromEntries(
+          Object.entries(values).map(([service, metricsOf]) => {
+            const lines = metrics
+              .filter((metric) => metricsOf[metric])
+              .map((metric) => compare(metric, metricsOf[metric]));
+            return [
+              service,
+              {
+                summary: lines.map((line) => line.text).join(' · '),
+                notable: lines.filter((line) => line.notable).map((line) => line.text),
+              },
+            ];
+          }),
+        );
+        return { now: anchor.toISOString(), before: baseline.toISOString(), services };
       },
     },
 

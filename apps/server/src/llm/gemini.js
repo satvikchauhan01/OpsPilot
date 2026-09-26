@@ -6,6 +6,8 @@ import { createRateLimiter } from './limiter.js';
 
 const MAX_ATTEMPTS = 5;
 const MAX_RETRY_WAIT_MS = 60_000;
+// After a model reports overload, new conversations skip it for this long.
+const OVERLOAD_COOLDOWN_MS = 10 * 60_000;
 
 export class LlmUnavailableError extends Error {}
 
@@ -19,6 +21,12 @@ export function createGemini({ apiKey, model, fallbackModel, requestsPerMinute, 
 
   const client = new GoogleGenAI({ apiKey });
   const waitForSlot = createRateLimiter(requestsPerMinute);
+  let primaryOverloadedUntil = 0;
+
+  // The model a new conversation should start with.
+  function pickModel() {
+    return fallbackModel && Date.now() < primaryOverloadedUntil ? fallbackModel : model;
+  }
 
   async function remainingToday() {
     const usage = await LlmUsage.findOne({ day: today() }).lean();
@@ -82,8 +90,9 @@ export function createGemini({ apiKey, model, fallbackModel, requestsPerMinute, 
         const busy = err.status === 429 || err.status === 503;
         if (!(busy || err.status >= 500)) throw err;
         if (attempt === MAX_ATTEMPTS) {
-          if (busy) throw new LlmOverloadedError(`${chosen} is overloaded right now (HTTP ${err.status})`);
-          throw err;
+          if (!busy) throw err;
+          if (chosen === model) primaryOverloadedUntil = Date.now() + OVERLOAD_COOLDOWN_MS;
+          throw new LlmOverloadedError(`${chosen} is overloaded right now (HTTP ${err.status})`);
         }
         const wait = err.status === 429 ? retryDelay(err) : 2000 * 2 ** (attempt - 1);
         logger.warn({ model: chosen, status: err.status, attempt, waitMs: wait }, 'Gemini request failed, retrying');
@@ -92,7 +101,7 @@ export function createGemini({ apiKey, model, fallbackModel, requestsPerMinute, 
     }
   }
 
-  return { model, fallbackModel, generate, remainingToday };
+  return { model, fallbackModel, pickModel, generate, remainingToday };
 }
 
 // A 429 from Gemini usually says how long to back off ("retryDelay": "37s").
