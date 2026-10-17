@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 import { useRunbook, useRunbookSearch, useRunbooks } from '../lib/queries.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
@@ -11,28 +11,52 @@ import { Empty, ErrorState, Loading, QueryState } from '../components/States.jsx
 import { ServiceChip } from '../components/Tags.jsx';
 import styles from './RunbooksPage.module.css';
 
+const URL_DELAY_MS = 300;
+
 export function RunbooksPage() {
   const { slug } = useParams();
   const anchor = decodeURIComponent(useLocation().hash.slice(1));
   const [params, setParams] = useSearchParams();
-  const text = params.get('q') ?? '';
   const searchRef = useRef(null);
   const runbooks = useRunbooks();
 
-  useHotkeys({ '/': () => searchRef.current?.focus() });
-
-  // The search lives in the URL, so it stays while you open results and can be shared.
-  function setText(value) {
-    const next = new URLSearchParams(params);
-    if (value) next.set('q', value);
-    else next.delete('q');
-    setParams(next, { replace: true });
+  // The box keeps what is typed; the address follows a moment later, so the search survives
+  // opening a result and can be shared. Writing the address on every key made fast typing
+  // lose characters. When the address changes from elsewhere (a link, the command palette,
+  // Back), the box takes the new search.
+  const urlText = params.get('q') ?? '';
+  const [text, setText] = useState(urlText);
+  const [seen, setSeen] = useState(urlText);
+  const [written, setWritten] = useState(null);
+  if (urlText !== seen) {
+    setSeen(urlText);
+    if (urlText !== written) setText(urlText);
   }
+
+  useEffect(() => {
+    if (text === urlText) return;
+    const timer = setTimeout(() => {
+      setWritten(text);
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          if (text) next.set('q', text);
+          else next.delete('q');
+          return next;
+        },
+        { replace: true },
+      );
+    }, URL_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [text, urlText, setParams]);
+
+  useHotkeys({ '/': () => searchRef.current?.focus() });
 
   return (
     <div className={styles.page} data-reading={slug ? '' : undefined}>
       <aside className={styles.index} aria-label="Runbook index">
         <header className={styles.indexHeader}>
+          <p className={styles.kicker}>Knowledge</p>
           <h1>Runbooks</h1>
           <div className={styles.search} role="search">
             <label htmlFor="runbook-search" className="visually-hidden">

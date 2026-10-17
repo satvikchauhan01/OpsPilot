@@ -13,7 +13,7 @@ export default [
   },
 
   {
-    files: ['apps/server/**/*.js', 'scripts/**/*.mjs', 'eslint.config.mjs'],
+    files: ['apps/server/**/*.js', 'scripts/**/*.mjs', 'deploy/gemini-relay/**/*.js', 'eslint.config.mjs'],
     languageOptions: { globals: globals.node },
   },
 

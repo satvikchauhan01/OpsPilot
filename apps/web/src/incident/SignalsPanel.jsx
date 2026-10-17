@@ -38,7 +38,7 @@ export function SignalsPanel({ metrics, incident, changes, now }) {
   const markers = changes.map((entry) => ({ at: new Date(entry.at).getTime(), label: entry.title }));
 
   return (
-    <Panel title="Signals" meta="shaded: incident · ▾ changes">
+    <Panel title="Signals" meta="shaded: incident · ▾ changes" id="signals">
       <QueryState query={metrics} loadingLabel="Querying Prometheus">
         {(data) => {
           const domain = [new Date(data.window.start).getTime(), new Date(data.window.end).getTime()];

@@ -117,3 +117,15 @@
   border-radius: 2px;
   flex: none;
 }
+
+.service[data-size='large'] {
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.service[data-size='large'] .swatch {
+  width: 16px;
+  height: 4px;
+}

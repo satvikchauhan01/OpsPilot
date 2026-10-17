@@ -16,10 +16,13 @@ export class LlmOverloadedError extends Error {}
 
 // The only place OpsPilot talks to a language model. Everything model-specific lives here:
 // request format, rate limits, retries and quota accounting.
-export function createGemini({ apiKey, model, fallbackModel, requestsPerMinute, dailyRequestBudget }) {
+export function createGemini({ apiKey, model, fallbackModel, relay, requestsPerMinute, dailyRequestBudget }) {
   if (!apiKey) return null;
 
-  const client = new GoogleGenAI({ apiKey });
+  const client = new GoogleGenAI({
+    apiKey,
+    ...(relay && { httpOptions: { baseUrl: relay.url, headers: { 'x-relay-token': relay.token } } }),
+  });
   const waitForSlot = createRateLimiter(requestsPerMinute);
   let primaryOverloadedUntil = 0;
 

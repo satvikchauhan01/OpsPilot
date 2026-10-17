@@ -21,8 +21,17 @@
 
   --radius: 4px;
   --radius-sm: 2px;
-  --topbar-height: 52px;
-  --content-width: 1440px;
+  --topbar-height: 48px;
+  --sidebar-width: 232px;
+  --sidebar-rail: 60px;
+  --content-width: 1520px;
+
+  /* Headline numbers are set in mono so digits line up and don't jump as they change */
+  --number-xl: 600 44px/1 var(--font-mono);
+  --number-lg: 600 30px/1 var(--font-mono);
+  --number-md: 600 20px/1 var(--font-mono);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 :root,
@@ -63,6 +72,10 @@
   --grid: #23282d;
   --axis: #3a4047;
   --shade: rgba(255, 106, 77, 0.07);
+
+  --sidebar: #0c0e10;
+  --scrim: rgba(6, 7, 8, 0.62);
+  --shadow-pop: 0 18px 48px rgba(0, 0, 0, 0.55);
 }
 
 :root[data-theme='light'] {
@@ -102,4 +115,8 @@
   --grid: #e7e2d7;
   --axis: #c7bfaf;
   --shade: rgba(194, 53, 27, 0.06);
+
+  --sidebar: #e9e5da;
+  --scrim: rgba(28, 26, 23, 0.38);
+  --shadow-pop: 0 18px 48px rgba(60, 50, 30, 0.22);
 }

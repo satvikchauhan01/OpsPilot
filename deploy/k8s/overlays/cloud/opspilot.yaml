@@ -60,6 +60,9 @@ spec:
       serviceAccountName: opspilot-server
       securityContext:
         runAsNonRoot: true
+        # The image's node user. The kubelet can only check a numeric user isn't root.
+        runAsUser: 1000
+        runAsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:

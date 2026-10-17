@@ -1,0 +1,142 @@
+.journey {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 0 var(--space-2) 0 0;
+}
+
+/* The line from this station to the next */
+.step::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 16px;
+  right: 0;
+  height: 2px;
+  background: var(--line);
+}
+
+.step:last-child::before {
+  display: none;
+}
+
+.step[data-state='done']::before {
+  background: var(--ink-3);
+}
+
+.mark {
+  position: relative;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+.step[data-state='done'] .mark {
+  border-color: var(--ink-2);
+  background: var(--ink-2);
+}
+
+.step[data-state='active'] .mark {
+  border-color: var(--info);
+  background: var(--bg);
+  box-shadow: 0 0 0 4px var(--info-wash);
+  animation: working 1.2s ease-in-out infinite;
+}
+
+.step[data-state='waiting'] .mark {
+  border-color: var(--warning);
+  background: var(--warning);
+  box-shadow: 0 0 0 4px var(--warning-wash);
+}
+
+.step[data-state='failed'] .mark {
+  border-color: var(--critical);
+  background: var(--critical);
+  border-radius: 2px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.step[data-state] .label {
+  color: var(--ink);
+}
+
+.when {
+  min-height: 1em;
+  font: 500 12px/1 var(--font-mono);
+  color: var(--ink-3);
+}
+
+.step[data-state='waiting'] .when {
+  color: var(--warning);
+}
+
+.step[data-state='failed'] .when {
+  color: var(--critical);
+}
+
+@keyframes working {
+  50% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+
+/* Top to bottom: in narrow columns, and on phones */
+.journey[data-vertical] {
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+
+.journey[data-vertical] .step {
+  grid-template-columns: 14px 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 5px 0;
+}
+
+.journey[data-vertical] .step::before {
+  top: 20px;
+  bottom: -10px;
+  left: 6px;
+  right: auto;
+  width: 2px;
+  height: auto;
+}
+
+@media (max-width: 760px) {
+  .journey {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .step {
+    grid-template-columns: 14px 1fr auto;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 5px 0;
+  }
+
+  .step::before {
+    top: 20px;
+    bottom: -10px;
+    left: 6px;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+}

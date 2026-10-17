@@ -96,25 +96,55 @@ export function LoginPage() {
   );
 }
 
-// The decorative side of the page: an error-rate trace that spikes and recovers,
-// which is the whole product in one line.
+// The story of one incident on one error-rate line, numbered where OpsPilot steps in.
+const STORY = [
+  { x: 236, y: 200, text: 'checkout 1.4.2 is deployed' },
+  { x: 256, y: 140, text: 'the error rate crosses its limit and an alert fires' },
+  { x: 296, y: 80, text: 'the AI finds the bad deploy, citing logs, metrics and the change' },
+  { x: 334, y: 74, text: 'a person approves the rollback it proposes' },
+  { x: 378, y: 200, text: 'OpsPilot checks the metrics recover, then drafts the postmortem' },
+];
+
+// The other side of the page: what OpsPilot is, in one picture.
 function SignalTrace() {
   return (
-    <div className={styles.trace} aria-hidden="true">
-      <svg viewBox="0 0 600 240">
-        <line x1="0" y1="200" x2="600" y2="200" className={styles.baseline} />
-        <line x1="0" y1="140" x2="600" y2="140" className={styles.threshold} />
-        <path
-          className={styles.line}
-          pathLength="1"
-          d="M0 196 L60 195 L110 197 L160 194 L210 196 L240 190 L262 120 L280 60 L300 72 L318 58 L338 66 L352 150 L372 188 L420 194 L470 192 L520 195 L600 194"
-        />
-        <circle cx="262" cy="120" r="5" className={styles.marker} />
-      </svg>
-      <div className={styles.traceLabels}>
-        <span className="caption">checkout · error rate</span>
-        <span className="caption">deploy 1.4.2 → alert → rollback → recovered</span>
+    <section className={styles.story} aria-labelledby="story-title">
+      <p className={styles.kicker}>AI incident response for Kubernetes</p>
+      <h2 id="story-title" className={styles.storyTitle}>
+        Find what broke. Fix it with a person in the loop.
+      </h2>
+      <p className={styles.storyLede}>
+        OpsPilot watches a real shop running on Kubernetes, groups its alerts into incidents, has an AI agent work out
+        the root cause with evidence for every claim, and runs a fix only after someone approves it.
+      </p>
+
+      <div className={styles.trace} aria-hidden="true">
+        <svg viewBox="0 0 600 240">
+          <line x1="0" y1="210" x2="600" y2="210" className={styles.baseline} />
+          <line x1="0" y1="140" x2="600" y2="140" className={styles.threshold} />
+          <text x="600" y="132" className={styles.axisLabel}>
+            alert limit
+          </text>
+          <path
+            className={styles.line}
+            pathLength="1"
+            d="M0 206 L60 205 L110 207 L160 204 L210 206 L236 200 L256 140 L274 70 L296 80 L314 66 L334 74 L352 150 L378 200 L420 205 L470 203 L520 206 L600 205"
+          />
+          {STORY.map((point, index) => (
+            <g key={point.text} className={styles.point} style={{ animationDelay: `${0.5 + index * 0.35}s` }}>
+              <circle cx={point.x} cy={point.y} r="10" />
+              <text x={point.x} y={point.y} dy="0.35em">
+                {index + 1}
+              </text>
+            </g>
+          ))}
+        </svg>
       </div>
-    </div>
+      <ol className={styles.steps}>
+        {STORY.map((point) => (
+          <li key={point.text}>{point.text}</li>
+        ))}
+      </ol>
+    </section>
   );
 }

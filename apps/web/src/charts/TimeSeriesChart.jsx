@@ -22,6 +22,7 @@ const TABLE_ROWS = 24;
  * markers:   [{ at, label }] vertical ticks, e.g. deploys
  * shade:     { from, to } highlighted span, e.g. the incident itself
  * emphasis:  services to draw at full strength, the rest recede
+ * playhead:  a moment (ms) to mark; what comes after it is veiled, as in a replay
  */
 export function TimeSeriesChart({
   title,
@@ -32,6 +33,7 @@ export function TimeSeriesChart({
   markers = [],
   shade,
   emphasis,
+  playhead,
   height = 180,
 }) {
   const [containerRef, width] = useElementWidth();
@@ -176,6 +178,13 @@ export function TimeSeriesChart({
                     />
                   ))}
                 </g>
+
+                {playhead !== undefined && playhead >= domain[0] && playhead <= domain[1] && (
+                  <g className={styles.playhead}>
+                    <rect x={x(playhead)} width={Math.max(0, innerWidth - x(playhead))} height={innerHeight} />
+                    <line x1={x(playhead)} x2={x(playhead)} y2={innerHeight} />
+                  </g>
+                )}
 
                 {readout && (
                   <g transform={`translate(${x(readout.time)},0)`}>

@@ -1,11 +1,24 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { Alert } from '../models/alert.js';
 import { compareSeverity } from '../alerts/severity.js';
+import { parse } from '../http/errors.js';
 import { finite } from '../telemetry/prometheus.js';
 import { serviceQueries } from '../topology/service.js';
+import { serviceSeries } from './metrics.js';
 
 const HISTORY_MS = 60 * 60_000;
 const HISTORY_STEP_SECONDS = 60;
+
+const serviceName = z.string().regex(/^[a-z0-9-]{1,63}$/, 'not a service name');
+const metricsQuery = z.object({
+  minutes: z.coerce
+    .number()
+    .int()
+    .min(15)
+    .max(24 * 60)
+    .default(60),
+});
 
 // One row per service for the overview: current health, a one-hour history, the deployed
 // version and replicas, and any firing alerts.
@@ -61,6 +74,22 @@ export function servicesRouter({ prometheus, tracker, config }) {
     });
 
     res.json({ at: now.toISOString(), services });
+  });
+
+  // One service's charts over the last `minutes`, for its detail panel.
+  router.get('/:name/metrics', async (req, res) => {
+    const name = parse(serviceName, req.params.name);
+    const { minutes } = parse(metricsQuery, req.query);
+    const end = new Date();
+    const { window, metrics } = await serviceSeries(prometheus, config.kube.namespace, {
+      start: new Date(end - minutes * 60_000),
+      end,
+    });
+    const own = Object.entries(metrics).map(([metric, series]) => [
+      metric,
+      series.filter((entry) => entry.service === name),
+    ]);
+    res.json({ window, metrics: Object.fromEntries(own) });
   });
 
   return router;

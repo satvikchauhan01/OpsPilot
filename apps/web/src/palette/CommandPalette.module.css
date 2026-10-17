@@ -1,0 +1,130 @@
+.dialog {
+  width: min(660px, calc(100vw - 32px));
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+}
+
+.search input {
+  flex: 1;
+  height: 54px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 16px;
+  outline: none;
+}
+
+.search input::placeholder {
+  color: var(--ink-3);
+}
+
+.results {
+  max-height: min(56vh, 460px);
+  overflow-y: auto;
+  padding: var(--space-2);
+  scrollbar-width: thin;
+}
+
+.group + .group {
+  margin-top: var(--space-2);
+}
+
+.groupName {
+  padding: 8px 10px 6px;
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 38px;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.option[aria-selected='true'] {
+  background: var(--hover);
+  color: var(--ink);
+  box-shadow: inset 2px 0 0 var(--signal);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 18px;
+  color: var(--ink-3);
+}
+
+.option[aria-selected='true'] .icon {
+  color: var(--signal);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label mark {
+  background: none;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--signal);
+  text-underline-offset: 3px;
+}
+
+.hint {
+  flex: none;
+  font: 400 12px/1 var(--font-mono);
+  color: var(--ink-3);
+}
+
+.keys {
+  display: inline-flex;
+  gap: 3px;
+  flex: none;
+}
+
+.empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--ink-3);
+}
+
+.footer {
+  display: flex;
+  gap: var(--space-4);
+  padding: 10px var(--space-4);
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 760px) {
+  .footer {
+    display: none;
+  }
+}

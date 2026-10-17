@@ -2,29 +2,6 @@
   border-top: 2px solid var(--signal);
 }
 
-.run {
-  height: 28px;
-  white-space: nowrap;
-  padding: 0 12px;
-  border: 1px solid var(--ink);
-  border-radius: var(--radius);
-  background: var(--ink);
-  color: var(--bg);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.run:hover:not(:disabled) {
-  background: var(--signal);
-  border-color: var(--signal);
-  color: #fff;
-}
-
-.run:disabled {
-  opacity: 0.6;
-}
-
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr);
@@ -182,15 +159,6 @@
   font-weight: 500;
 }
 
-.close {
-  padding: 2px 8px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--ink-2);
-  cursor: pointer;
-}
-
 .json {
   max-height: 320px;
   margin: 0;
@@ -244,6 +212,11 @@
 
 .workingTitle {
   font-weight: 600;
+}
+
+.now {
+  margin: 4px 0;
+  font-weight: 500;
 }
 
 .pulse {

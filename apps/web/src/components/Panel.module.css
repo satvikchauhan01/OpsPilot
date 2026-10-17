@@ -3,6 +3,8 @@
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  /* Clear the sticky bars when a link jumps to a panel */
+  scroll-margin-top: calc(var(--topbar-height) + 60px);
 }
 
 .header {

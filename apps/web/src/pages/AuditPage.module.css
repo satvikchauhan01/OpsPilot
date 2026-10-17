@@ -1,51 +1,72 @@
 .page {
   display: grid;
-  gap: var(--space-4);
-}
-
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.header h1 {
-  font-size: 24px;
-}
-
-.lede {
-  max-width: 70ch;
-  margin-top: var(--space-2);
-  color: var(--ink-2);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
 }
 
 .chain {
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--line-strong);
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-strong);
   border-radius: var(--radius);
   background: var(--surface);
-  font-size: 13px;
+}
+
+.chain[data-intact='true'] {
+  border-left-color: var(--ok);
 }
 
 .chain[data-intact='false'] {
-  border-color: var(--critical);
+  border-left-color: var(--critical);
   background: var(--critical-wash);
 }
 
-.chain button {
-  padding: 2px 8px;
+.seal {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: none;
+  border-radius: 50%;
+  color: var(--ink-3);
+}
+
+.chain[data-intact='true'] .seal {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.chain[data-intact='false'] .seal {
+  border-color: var(--critical);
+  color: var(--critical);
+}
+
+.chainText {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.chainTitle {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.chainDetail {
   color: var(--ink-2);
-  font-size: 12px;
-  cursor: pointer;
+  font-size: 13px;
+}
+
+.head {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 11px/1.4 var(--font-mono);
+  color: var(--ink-3);
 }
 
 .filters {
@@ -54,22 +75,8 @@
   gap: var(--space-4);
 }
 
-.filters label {
-  display: grid;
-  gap: 4px;
-}
-
-.filters input,
-.filters select {
-  height: 32px;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
 .filters input {
-  width: 110px;
+  width: 120px;
 }
 
 .tableWrap {
@@ -136,17 +143,52 @@
 }
 
 .more {
-  display: block;
-  width: 100%;
-  padding: var(--space-3);
-  border: 0;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2);
   border-top: 1px solid var(--line);
-  background: none;
-  color: var(--ink-2);
-  cursor: pointer;
 }
 
-.more:hover {
-  background: var(--hover);
-  color: var(--ink);
+/* On a phone each record becomes a short block: what and when, then who and why */
+@media (max-width: 760px) {
+  .table thead {
+    display: none;
+  }
+
+  .table,
+  .table tbody,
+  .table td {
+    display: block;
+  }
+
+  .table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .table td,
+  .table td:first-child {
+    padding: 0;
+    border: 0;
+  }
+
+  .details {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .chain {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .chain > :last-child {
+    grid-column: 2;
+    justify-self: start;
+  }
 }

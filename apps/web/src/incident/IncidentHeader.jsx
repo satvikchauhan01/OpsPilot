@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
 import { canRespond, useAuth } from '../auth/AuthContext.jsx';
-import { useIncidentStatus } from '../lib/queries.js';
+import { useActions, useIncidentStatus, useInvestigation, usePostmortem } from '../lib/queries.js';
 import { clock, dateTime, duration, incidentId, timeAgo } from '../lib/format.js';
-import { SeverityTag, ServiceChip } from '../components/Tags.jsx';
+import { useConsole } from '../layout/ConsoleContext.js';
+import { Button, ButtonLink } from '../components/Button.jsx';
+import { Field } from '../components/Field.jsx';
+import { SeverityTag, ServiceChip, StatusTag } from '../components/Tags.jsx';
+import { LinkIcon, ReplayIcon } from '../components/Icons.jsx';
+import { Journey } from './Journey.jsx';
+import { journeyOf } from './journey.js';
 import styles from './IncidentHeader.module.css';
 
-const STEPS = ['open', 'investigating', 'mitigating', 'resolved'];
-const STEP_LABEL = { open: 'Open', investigating: 'Investigating', mitigating: 'Mitigating', resolved: 'Resolved' };
 const NEXT = {
   open: ['investigating', 'mitigating', 'resolved'],
   investigating: ['mitigating', 'resolved'],
@@ -18,41 +21,74 @@ const ACTION_LABEL = { investigating: 'Start investigating', mitigating: 'Mark m
 
 export function IncidentHeader({ incident, now }) {
   const { user } = useAuth();
+  const { toast } = useConsole();
+  const investigation = useInvestigation(incident.number);
+  const actions = useActions(incident.number);
+  const postmortem = usePostmortem(incident.number);
+  const resolved = incident.status === 'resolved';
   const ended = incident.resolvedAt ? new Date(incident.resolvedAt) : now;
   const others = incident.services.filter((service) => service !== incident.suspectedService);
 
+  const steps = journeyOf({
+    incident,
+    investigation: investigation.data,
+    actions: actions.data,
+    postmortem: postmortem.data,
+  });
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href.split('#')[0]);
+      toast({
+        tone: 'ok',
+        title: 'Link copied',
+        detail: `Anyone signed in can open ${incidentId(incident.number)} with it.`,
+      });
+    } catch {
+      toast({ tone: 'warning', title: 'Could not copy the link', detail: 'Copy it from the address bar instead.' });
+    }
+  }
+
   return (
     <header className={styles.header}>
-      <Link to="/incidents" className={styles.back}>
-        ← Incidents
-      </Link>
-
-      <div className={styles.idLine}>
-        <span className={styles.id}>{incidentId(incident.number)}</span>
-        <SeverityTag severity={incident.severity} />
-        <StatusSteps status={incident.status} />
+      <div className={styles.top}>
+        <div className={styles.idLine}>
+          <span className={styles.id}>{incidentId(incident.number)}</span>
+          <SeverityTag severity={incident.severity} />
+          <StatusTag status={incident.status} />
+        </div>
+        <div className={styles.tools}>
+          <Button variant="ghost" size="sm" onClick={copyLink}>
+            <LinkIcon size={14} /> Copy link
+          </Button>
+          <ButtonLink to={`/incidents/${incident.number}/replay`} size="sm">
+            <ReplayIcon size={14} /> Replay
+          </ButtonLink>
+        </div>
       </div>
 
       <h1 className={styles.title}>{incident.title}</h1>
 
       <dl className={styles.facts}>
         <div>
-          <dt className="caption">Started</dt>
+          <dt>Started</dt>
           <dd title={dateTime(incident.startedAt)}>
-            <span className="mono">{clock(incident.startedAt)}</span> · {timeAgo(incident.startedAt, now)}
+            <span>
+              <span className="mono">{clock(incident.startedAt)}</span> · {timeAgo(incident.startedAt, now)}
+            </span>
           </dd>
         </div>
         <div>
-          <dt className="caption">{incident.resolvedAt ? 'Lasted' : 'Ongoing for'}</dt>
-          <dd className="mono numeric">{duration(ended - new Date(incident.startedAt))}</dd>
+          <dt>{resolved ? 'Lasted' : 'Ongoing for'}</dt>
+          <dd className={styles.big}>{duration(ended - new Date(incident.startedAt))}</dd>
         </div>
         <div>
-          <dt className="caption">Likely origin</dt>
+          <dt>Likely origin</dt>
           <dd>{incident.suspectedService ? <ServiceChip service={incident.suspectedService} emphasis /> : '—'}</dd>
         </div>
         {others.length > 0 && (
           <div>
-            <dt className="caption">Also affected</dt>
+            <dt>Also affected</dt>
             <dd className={styles.chips}>
               {others.map((service) => (
                 <ServiceChip key={service} service={service} />
@@ -60,27 +96,18 @@ export function IncidentHeader({ incident, now }) {
             </dd>
           </div>
         )}
+        <div>
+          <dt>Alerts</dt>
+          <dd className="mono">
+            {incident.alerts.length} · {incident.alerts.filter((alert) => alert.status === 'firing').length} firing
+          </dd>
+        </div>
       </dl>
+
+      <Journey steps={steps} startedAt={incident.startedAt} />
 
       {canRespond(user) && NEXT[incident.status].length > 0 && <StatusActions incident={incident} />}
     </header>
-  );
-}
-
-function StatusSteps({ status }) {
-  const reached = STEPS.indexOf(status);
-  return (
-    <ol className={styles.steps} aria-label={`Status: ${STEP_LABEL[status]}`}>
-      {STEPS.map((step, index) => (
-        <li
-          key={step}
-          data-state={index < reached ? 'done' : index === reached ? 'current' : 'todo'}
-          aria-current={index === reached ? 'step' : undefined}
-        >
-          {STEP_LABEL[step]}
-        </li>
-      ))}
-    </ol>
   );
 }
 
@@ -98,32 +125,30 @@ function StatusActions({ incident }) {
           mutation.mutate({ status: 'resolved', note }, { onSuccess: () => setResolving(false) });
         }}
       >
-        <label className={styles.noteField}>
-          <span className="caption">What fixed it? (optional)</span>
+        <Field label="What fixed it? (optional)" grow>
           <input name="note" maxLength={500} placeholder="e.g. rolled checkout back to 1.4.1" autoFocus />
-        </label>
-        <button type="submit" className={styles.primary} disabled={mutation.isPending}>
+        </Field>
+        <Button type="submit" variant="primary" disabled={mutation.isPending}>
           Resolve incident
-        </button>
-        <button type="button" className={styles.secondary} onClick={() => setResolving(false)}>
-          Cancel
-        </button>
+        </Button>
+        <Button onClick={() => setResolving(false)}>Cancel</Button>
       </form>
     );
   }
 
   return (
     <div className={styles.actions}>
+      <span className={styles.actionsLabel}>Status</span>
       {NEXT[incident.status].map((status) => (
-        <button
+        <Button
           key={status}
-          type="button"
-          className={status === 'resolved' ? styles.primary : styles.secondary}
+          size="sm"
+          variant={status === 'resolved' ? 'primary' : 'secondary'}
           disabled={mutation.isPending}
           onClick={() => (status === 'resolved' ? setResolving(true) : mutation.mutate({ status }))}
         >
           {ACTION_LABEL[status]}
-        </button>
+        </Button>
       ))}
       {mutation.isError && (
         <span className={styles.error} role="alert">

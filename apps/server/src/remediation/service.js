@@ -36,8 +36,15 @@ export function createRemediationService({ executor, prometheus, incidents, runb
     };
   }
 
+  // Enough for a browser to say what happened without fetching the action first.
   function publish(action) {
-    bus.publish('action.updated', { incidentNumber: action.incidentNumber, id: action.id, status: action.status });
+    bus.publish('action.updated', {
+      incidentNumber: action.incidentNumber,
+      id: action.id,
+      status: action.status,
+      type: action.type,
+      service: action.params.service,
+    });
   }
 
   function record(type, action, actor, data = {}) {

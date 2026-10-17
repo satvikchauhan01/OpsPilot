@@ -7,7 +7,9 @@ Once a human approves, it runs the fix, checks that it worked, and drafts the po
 It comes with a small online shop to watch, and a demo page where anyone can break that
 shop in one of four ways and follow OpsPilot through the incident.
 
-![A live incident in OpsPilot: the AI's root cause with the evidence behind each claim, and the fix it proposes, waiting for approval](docs/screenshots/incident.png)
+**Live at https://opspilot-main.duckdns.org.** Sign in as a guest with one click.
+
+![A live incident in OpsPilot: its path from detection to the approved fix now being verified, and the AI's root cause with the evidence behind each claim](docs/screenshots/incident.png)
 
 ## What it does
 
@@ -34,26 +36,38 @@ shop in one of four ways and follow OpsPilot through the incident.
    AI writes the summary, the lessons and the action items around them. The team edits it,
    exports it as Markdown and marks it final, and the final version goes into incident
    memory for the next investigation to find.
-7. **Shows it live.** A React console streams all of this as it happens: charts synced with
-   the timeline, an interactive dependency map, the investigation step by step, the fix's
-   rollout and verification, a searchable runbook library, the audit log and demo control.
+7. **Shows it live.** A React console streams all of this as it happens: a service map with
+   requests moving along it at their real rate, every incident's path from detection to
+   postmortem, the investigation step by step, charts synced with the timeline, and toasts
+   (or browser notifications) the moment something needs a person.
+8. **Replays and measures.** Any incident can be played back on its own clock: the map, the
+   charts and the story move together from the first alert to the verified fix. An insights
+   page adds it all up: time to root cause, to a verified fix and to resolution, how often
+   fixes worked, and where incidents start.
+
+Around that: a command palette (Ctrl+K) that reaches any incident, service, runbook or
+scenario; a detail panel for every service; a guided tour for first-time visitors; a team
+page where admins manage people and roles; a searchable runbook library; and the audit log.
 
 | | |
 |---|---|
-| ![Overview: service health, open incidents, the live service map and recent changes](docs/screenshots/overview.png) | ![Demo control: four ways to break the shop, one at a time](docs/screenshots/demo.png) |
+| ![Overview: shop status in large numbers, the live service map, open incidents and every service](docs/screenshots/overview.png) | ![Replay of an incident, paused where the fix waits for approval](docs/screenshots/replay.png) |
+| ![Insights: time to root cause, fix and resolution, incidents per day and per service](docs/screenshots/insights.png) | ![The command palette, searching for checkout](docs/screenshots/palette.png) |
+| ![A service's detail panel: live numbers, charts, callers, changes and incidents](docs/screenshots/service.png) | ![Demo control: four ways to break the shop, one at a time](docs/screenshots/demo.png) |
 | ![The postmortem OpsPilot drafted, in the light theme](docs/screenshots/postmortem-light.png) | ![The incident page on a phone](docs/screenshots/mobile.png) |
 
 ## Try the demo
 
-The public deployment has a **Try the demo as a guest** button on the sign-in page. A guest
-session lasts two hours and can do everything the demo needs: start a scenario, approve a
-fix, investigate a live incident. Postmortems and resets stay with the team's own
-responders.
+The [public deployment](https://opspilot-main.duckdns.org) has a **Try the demo as a
+guest** button on the sign-in page. A guest session lasts two hours and can do everything
+the demo needs: start a scenario, approve a fix, investigate a live incident. Postmortems
+and resets stay with the team's own responders.
 
 1. **Start a scenario** on the demo page. For a first run, pick S1, a bad release: checkout
    1.4.2 goes out and fails every order with an expired coupon code.
-2. **Watch it get detected.** Within about two minutes the error-rate alerts fire, and the
-   incident appears on the demo page and in a banner at the top.
+2. **Watch it get detected.** Within about two minutes the error-rate alerts fire, the
+   incident appears on the demo page, and a notification pops up wherever you are. The steps
+   on the demo page light up as the incident moves along.
 3. **Read the investigation.** A minute later the AI starts. It reads the alerts, the
    metrics, the changes, the logs, similar past incidents and the runbooks, then names the
    root cause. Click any evidence tag (E1, E2…) to see the query and the result behind it.
@@ -62,7 +76,11 @@ responders.
 5. **Watch it verify.** For three minutes OpsPilot measures every service of the incident
    against its limits. Only the last minute decides.
 6. **Read the postmortem.** Once the alerts have been quiet for five minutes, the incident
-   resolves itself and the postmortem draft appears at the bottom of the incident page.
+   resolves itself and the postmortem draft appears on the incident page.
+7. **Replay it.** The incident page's **Replay** button plays the whole incident back, at up
+   to 120 times its real speed.
+
+First-time guests get a one-minute tour; it is also under Ctrl+K, "Take the guided tour".
 
 The shop puts itself back 20 minutes after a scenario starts, whatever happened in between,
 and the next scenario can start 3 minutes after that. The other three scenarios are a
@@ -94,7 +112,9 @@ traffic spike (S4, scaling payments out).
 
 Locally, the shop and the observability stack run in minikube, while the server and the
 console run on the host. In the cloud, everything runs in one k3s cluster, behind Traefik
-with a Let's Encrypt certificate ([DEPLOYMENT.md](docs/DEPLOYMENT.md)).
+with a Let's Encrypt certificate ([DEPLOYMENT.md](docs/DEPLOYMENT.md)). Gemini doesn't serve
+that VM's region (Hong Kong), so there the model calls go out through a small relay on
+Vercel ([`deploy/gemini-relay`](deploy/gemini-relay)).
 
 ## Repository layout
 
@@ -102,11 +122,16 @@ with a Let's Encrypt certificate ([DEPLOYMENT.md](docs/DEPLOYMENT.md)).
 apps/server/   OpsPilot API: ingestion, correlation, change tracking, AI investigation,
                runbook search and incident memory (src/knowledge/), fixes and their
                verification (src/remediation/), the audit log (src/audit/), postmortems
-               (src/postmortems/) and demo control (src/demo/)
-apps/web/      OpsPilot console (React), and the nginx that serves it in the cloud
+               (src/postmortems/), insights (src/insights/) and demo control (src/demo/)
+apps/web/      OpsPilot console (React): pages/ for each screen, incident/ for the incident
+               page's panels, replay/, insights/, palette/, notifications/, services/,
+               tour/ and topology/ for the features they name, and the nginx that serves it
+               in the cloud
 demo/          the online shop that OpsPilot watches, plus its load generator
 deploy/k8s/    Kustomize manifests: base/ for everything, overlays/local/ for minikube,
                overlays/cloud/ for the public k3s deployment
+deploy/gemini-relay/
+               passes the server's Gemini calls on from a region Gemini serves (Vercel)
 docs/          requirements, roadmap, deployment guide, acceptance record, AI evaluation
 runbooks/      the shop's runbooks in Markdown, indexed by OpsPilot on every start
 scripts/       local cluster, failure scenarios, dev runner, evaluation and cloud deploy
@@ -175,9 +200,10 @@ npm run scenario -- list
 
 ## Deploying it
 
-The public deployment is one free VM running k3s. Traefik serves the site over HTTPS, and
-only the console and its API are reachable from outside. [DEPLOYMENT.md](docs/DEPLOYMENT.md)
-walks through the VM, the domain and the settings. After that it's two commands:
+The [public deployment](https://opspilot-main.duckdns.org) is one free VM running k3s.
+Traefik serves the site over HTTPS, and only the console and its API are reachable from
+outside. [DEPLOYMENT.md](docs/DEPLOYMENT.md) walks through the VM, the domain and the
+settings. After that it's two commands:
 
 ```bash
 npm run cloud -- setup    # once: Docker and k3s on the VM

@@ -24,6 +24,8 @@ const SERVER_SECRETS = [
   'MONGODB_URI',
   'MONGODB_DB',
   'GEMINI_API_KEY',
+  'GEMINI_RELAY_URL',
+  'GEMINI_RELAY_TOKEN',
   'ADMIN_EMAIL',
   'ADMIN_PASSWORD',
   'ADMIN_NAME',
@@ -178,9 +180,10 @@ function buildImages(settings, tag) {
     [
       `cd ${REMOTE_DIR}`,
       'id_of() { sudo docker image inspect --format "{{.Id}}" "$1" 2>/dev/null || true; }',
+      // Without provenance: its build timestamps would give an unchanged image a new ID
       ...shop.flatMap(({ image, service, version, defect }) => [
         `before=$(id_of ${image})`,
-        `sudo docker build --quiet --build-arg SERVICE=${service} --build-arg APP_VERSION=${version} --build-arg RELEASE_DEFECT=${defect} -t ${image} demo >/dev/null`,
+        `sudo docker build --quiet --provenance=false --build-arg SERVICE=${service} --build-arg APP_VERSION=${version} --build-arg RELEASE_DEFECT=${defect} -t ${image} demo >/dev/null`,
         `if [ -n "$before" ] && [ "$before" != "$(id_of ${image})" ]; then echo "changed ${image}"; fi`,
       ]),
       `sudo docker build --quiet -f apps/server/Dockerfile -t ${opspilot[0]} . >/dev/null`,

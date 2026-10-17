@@ -38,9 +38,9 @@ export function HealthTag({ status }) {
   );
 }
 
-export function ServiceChip({ service, emphasis }) {
+export function ServiceChip({ service, emphasis, size }) {
   return (
-    <span className={styles.service} data-emphasis={emphasis || undefined}>
+    <span className={styles.service} data-emphasis={emphasis || undefined} data-size={size}>
       <span className={styles.swatch} style={{ background: serviceColor(service) }} aria-hidden="true" />
       {service}
     </span>

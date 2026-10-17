@@ -1,6 +1,9 @@
+import { Action } from '../models/action.js';
 import { Alert } from '../models/alert.js';
 import { Change } from '../models/change.js';
 import { Incident } from '../models/incident.js';
+import { Investigation } from '../models/investigation.js';
+import { Postmortem } from '../models/postmortem.js';
 import { nextSequence } from '../models/counter.js';
 import { highestSeverity } from '../alerts/severity.js';
 import { normalizeAlert } from '../alerts/normalize.js';
@@ -13,6 +16,7 @@ import { findIncidentForAlert } from './correlation.js';
 import { canTransition } from './status.js';
 import { incidentTitle } from './title.js';
 import { buildTimeline } from './timeline.js';
+import { progressByIncident } from './progress.js';
 
 // How far before an incident the timeline looks for things that might have caused it.
 // Deliberate changes (deploys, scaling, config) can take a while to bite. Runtime symptoms
@@ -172,15 +176,32 @@ export function createIncidentService({ topology, config }) {
     if (service) filter.services = service;
 
     const incidents = await Incident.find(filter).sort({ startedAt: -1 }).limit(limit);
-    const firing = await Alert.aggregate([
-      { $match: { incident: { $in: incidents.map((incident) => incident._id) }, status: 'firing' } },
-      { $group: { _id: '$incident', count: { $sum: 1 } } },
+    const ids = incidents.map((incident) => incident._id);
+    const [firing, investigations, actions, postmortems] = await Promise.all([
+      Alert.aggregate([
+        { $match: { incident: { $in: ids }, status: 'firing' } },
+        { $group: { _id: '$incident', count: { $sum: 1 } } },
+      ]),
+      Investigation.aggregate([
+        { $match: { incident: { $in: ids } } },
+        { $sort: { createdAt: -1 } },
+        { $group: { _id: '$incident', status: { $first: '$status' } } },
+        { $project: { _id: 0, incident: '$_id', status: 1 } },
+      ]),
+      Action.find({ incident: { $in: ids }, status: { $nin: ['superseded', 'cancelled'] } }, 'incident status').lean(),
+      Postmortem.find({ incident: { $in: ids } }, 'incident status').lean(),
     ]);
     const firingCount = new Map(firing.map((row) => [String(row._id), row.count]));
+    const progress = progressByIncident({ investigations, actions, postmortems });
+    const none = { investigation: null, fix: null, postmortem: null };
 
     return incidents.map((incident) => {
       const { history, ...summary } = incident.toJSON();
-      return { ...summary, firingAlerts: firingCount.get(incident.id) ?? 0 };
+      return {
+        ...summary,
+        firingAlerts: firingCount.get(incident.id) ?? 0,
+        progress: progress.get(incident.id) ?? none,
+      };
     });
   }
 

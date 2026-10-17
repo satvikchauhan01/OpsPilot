@@ -1,0 +1,5 @@
+{
+  "name": "opspilot-gemini-relay",
+  "private": true,
+  "type": "module"
+}

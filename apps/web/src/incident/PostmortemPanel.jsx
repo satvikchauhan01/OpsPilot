@@ -6,6 +6,7 @@ import { Panel } from '../components/Panel.jsx';
 import { Markdown } from '../components/Markdown.jsx';
 import { Empty, QueryState } from '../components/States.jsx';
 import { DownloadIcon } from '../components/Icons.jsx';
+import { Button } from '../components/Button.jsx';
 import styles from './PostmortemPanel.module.css';
 
 const STATUS_LABEL = { drafting: 'Being written', draft: 'Draft', final: 'Final', failed: 'Not written' };
@@ -28,18 +29,13 @@ export function PostmortemPanel({ incident }) {
   const actions = current?.markdown && current.status !== 'drafting' && !editing && (
     <>
       {responder && current.status === 'draft' && (
-        <button type="button" className={styles.secondary} onClick={() => setEditing(true)}>
+        <Button size="sm" onClick={() => setEditing(true)}>
           Edit
-        </button>
+        </Button>
       )}
-      <button
-        type="button"
-        className={styles.secondary}
-        onClick={() => download(filename, current.markdown)}
-        title={`Download ${filename}`}
-      >
+      <Button size="sm" onClick={() => download(filename, current.markdown)} title={`Download ${filename}`}>
         <DownloadIcon /> .md
-      </button>
+      </Button>
     </>
   );
 
@@ -79,9 +75,9 @@ function NotWritten({ number, responder }) {
       </Empty>
       {responder && (
         <div className={styles.buttons}>
-          <button type="button" className={styles.primary} disabled={draft.isPending} onClick={() => draft.mutate()}>
+          <Button variant="primary" disabled={draft.isPending} onClick={() => draft.mutate()}>
             Write a draft
-          </button>
+          </Button>
         </div>
       )}
       {draft.error && <p className={styles.error}>{draft.error.message}</p>}
@@ -111,9 +107,9 @@ function Failed({ number, note, responder }) {
       <p className={styles.error}>The postmortem could not be written: {note}</p>
       {responder && (
         <div className={styles.buttons}>
-          <button type="button" className={styles.primary} disabled={draft.isPending} onClick={() => draft.mutate()}>
+          <Button variant="primary" disabled={draft.isPending} onClick={() => draft.mutate()}>
             Try again
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -151,12 +147,10 @@ function PostmortemDocument({ number, postmortem, responder }) {
 
       {responder && postmortem.status === 'draft' && step === null && (
         <div className={styles.buttons}>
-          <button type="button" className={styles.primary} onClick={() => setStep('finalize')}>
+          <Button variant="primary" onClick={() => setStep('finalize')}>
             Mark as final
-          </button>
-          <button type="button" className={styles.secondary} onClick={() => setStep('redraft')}>
-            Write it again
-          </button>
+          </Button>
+          <Button onClick={() => setStep('redraft')}>Write it again</Button>
         </div>
       )}
 
@@ -167,17 +161,14 @@ function PostmortemDocument({ number, postmortem, responder }) {
             similar incidents can learn from it.
           </p>
           <div className={styles.buttons}>
-            <button
-              type="button"
-              className={styles.primary}
+            <Button
+              variant="primary"
               disabled={finalize.isPending}
               onClick={() => finalize.mutate(undefined, { onSettled: () => setStep(null) })}
             >
               {finalize.isPending ? 'Saving…' : 'Make it final'}
-            </button>
-            <button type="button" className={styles.secondary} onClick={() => setStep(null)}>
-              Cancel
-            </button>
+            </Button>
+            <Button onClick={() => setStep(null)}>Cancel</Button>
           </div>
         </div>
       )}
@@ -189,17 +180,14 @@ function PostmortemDocument({ number, postmortem, responder }) {
             {postmortem.editedBy ? ' The edits made so far are replaced.' : ''}
           </p>
           <div className={styles.buttons}>
-            <button
-              type="button"
-              className={styles.primary}
+            <Button
+              variant="primary"
               disabled={draft.isPending}
               onClick={() => draft.mutate(undefined, { onSettled: () => setStep(null) })}
             >
               Write it again
-            </button>
-            <button type="button" className={styles.secondary} onClick={() => setStep(null)}>
-              Cancel
-            </button>
+            </Button>
+            <Button onClick={() => setStep(null)}>Cancel</Button>
           </div>
         </div>
       )}
@@ -274,12 +262,10 @@ function Editor({ number, markdown, onDone }) {
       )}
 
       <div className={styles.buttons}>
-        <button type="submit" className={styles.primary} disabled={save.isPending || (changed && !valid)}>
+        <Button type="submit" variant="primary" disabled={save.isPending || (changed && !valid)}>
           {save.isPending ? 'Saving…' : 'Save'}
-        </button>
-        <button type="button" className={styles.secondary} onClick={onDone}>
-          {changed ? 'Discard changes' : 'Cancel'}
-        </button>
+        </Button>
+        <Button onClick={onDone}>{changed ? 'Discard changes' : 'Cancel'}</Button>
         <span className={styles.hint}>Markdown. Ctrl+S saves.</span>
       </div>
       {save.error && <p className={styles.error}>{save.error.message}</p>}

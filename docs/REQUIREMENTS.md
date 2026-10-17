@@ -188,7 +188,8 @@ OpsPilot needs a real system to watch and repair. The demo system is a small onl
 
 - **UI-1 Pages.** Overview (service health and open incidents), incident list with filters,
   incident detail (timeline, topology and blast radius, metrics, investigation, runbooks,
-  similar incidents, actions, postmortem), runbooks, audit log and demo control.
+  similar incidents, actions, postmortem), runbooks, audit log and demo control. Since
+  Phase 7 also insights, incident replay and team management.
 - **UI-2 Own visual identity.** The UI has its own design tokens and typography, and light
   and dark themes. It doesn't use stock "AI app" looks: no purple gradients, glassmorphism,
   emoji icons or generic card grids.
@@ -198,6 +199,32 @@ OpsPilot needs a real system to watch and repair. The demo system is a small onl
 - **UI-4 Responsive and accessible.** The UI is usable at 375 px wide, works fully from the
   keyboard with visible focus, and meets WCAG AA contrast.
 - **UI-5 States.** Every data view has an empty state, a loading state and an error state.
+
+Added in Phase 7, after the first six phases were built:
+
+- **UI-6 Navigation.** A sidebar groups the pages (operate, knowledge, govern, demo), shows
+  how many incidents are open, and collapses to icons. Ctrl+K opens a command palette that
+  finds pages, incidents, services and runbooks by loose matching, starts scenarios and runs
+  the console's own commands.
+- **UI-7 Service details.** Every service, wherever it appears, opens a panel with its live
+  numbers, its charts over 1, 6 or 24 hours, its version and pods, who it calls and who
+  calls it, its recent changes, its incidents and its runbooks. The panel has its own
+  address, so it can be linked to.
+- **UI-8 Incident replay.** Any incident can be played back from shortly before its first
+  alert to after it resolved: the service map, the charts, the incident's progress and its
+  events show each moment as it was recorded. It plays, pauses, seeks and steps from event
+  to event, at several speeds, from the keyboard too.
+- **UI-9 Insights.** A page shows, for the last 7, 30, 90 or 365 days: time to root cause,
+  to a verified fix and to resolution, how often fixes worked, how often the AI's proposals
+  were approved, incidents per day, how long each incident lasted, where incidents start,
+  their root causes, fix outcomes per kind of fix, and model calls per day. Every chart has
+  a table view with the same numbers.
+- **UI-10 Live notifications.** News arrives as it happens: a new incident, a root cause
+  found, a fix waiting for approval, rolling out, verified, failed or rejected, a
+  postmortem written, an incident resolved. Urgent news can also reach the system's
+  notifications while the console is in a background tab, once the person turns that on.
+- **UI-11 Guided tour.** A guest's first visit starts a short tour of the demo, the service
+  map, the incident list and insights. It can be taken again at any time.
 
 ---
 
@@ -217,6 +244,10 @@ OpsPilot needs a real system to watch and repair. The demo system is a small onl
   internal or behind a login.
 - **SE-6 Input hygiene.** Every API input is validated with schemas. Security headers are
   set and CORS is restricted to the UI's origin.
+- **SE-7 Team management (Phase 7).** Admins add people, change their roles and remove
+  them from the UI. Nobody can change or remove themselves, and the last admin stays an
+  admin. A change reaches sessions that are already open within seconds. Every change is
+  recorded in the audit log by name and role, never by email.
 
 ---
 

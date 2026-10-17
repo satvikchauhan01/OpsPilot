@@ -1,136 +1,179 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import { useHotkeys } from '../hooks/useHotkeys.js';
 import { useLiveUpdates } from '../hooks/useLiveUpdates.js';
-import { BrandMark } from '../components/BrandMark.jsx';
-import { SeverityTag } from '../components/Tags.jsx';
-import { ArrowRightIcon, CloseIcon, KeyboardIcon, MoonIcon, SunIcon } from '../components/Icons.jsx';
-import { incidentId } from '../lib/format.js';
+import { useMediaQuery } from '../hooks/useMediaQuery.js';
+import { useStoredState } from '../hooks/useStoredState.js';
+import {
+  BellIcon,
+  CompassIcon,
+  KeyboardIcon,
+  MoonIcon,
+  SidebarIcon,
+  SignOutIcon,
+  SunIcon,
+} from '../components/Icons.jsx';
+import { toastForEvent } from '../notifications/events.js';
+import { useToasts } from '../notifications/useToasts.js';
+import { useBrowserNotifications } from '../notifications/useBrowserNotifications.js';
+import { Toaster } from '../notifications/Toaster.jsx';
+import { CommandPalette } from '../palette/CommandPalette.jsx';
+import { ServiceDrawer } from '../services/ServiceDrawer.jsx';
+import { Tour } from '../tour/Tour.jsx';
+import { ConsoleContext } from './ConsoleContext.js';
+import { sectionsFor } from './navigation.js';
+import { Sidebar } from './Sidebar.jsx';
+import { TopBar } from './TopBar.jsx';
 import { ShortcutHelp } from './ShortcutHelp.jsx';
 import styles from './Shell.module.css';
 
-const ANNOUNCEMENT_MS = 30_000;
+const NOTIFICATION_NEWS = {
+  on: {
+    tone: 'ok',
+    title: 'Browser notifications on',
+    detail: 'New incidents and failed or waiting fixes reach you while this tab is in the background.',
+  },
+  off: { tone: 'neutral', title: 'Browser notifications off' },
+  blocked: {
+    tone: 'warning',
+    title: 'Notifications are blocked',
+    detail: 'Allow them for this site in the browser settings, then turn them on again.',
+  },
+  unsupported: { tone: 'warning', title: 'This browser has no notifications' },
+};
 
 export function Shell() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
-  const { theme, toggle } = useTheme();
+  const { theme, toggle: toggleTheme } = useTheme();
+  const narrow = useMediaQuery('(max-width: 900px)');
+  const [collapsed, setCollapsed] = useStoredState('opspilot-sidebar-collapsed', false);
+  const [tourSeen, setTourSeen] = useStoredState('opspilot-tour-seen', false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [announcement, setAnnouncement] = useState(null);
+  // A guest's first visit starts with the tour
+  const [touring, setTouring] = useState(() => user.role === 'guest' && !tourSeen);
+  const { toasts, push, dismiss } = useToasts();
+  const notifications = useBrowserNotifications();
 
-  // The first alert only gives a first guess at title and severity. The banner follows the
-  // updates that arrive as more alerts join the incident.
   const connection = useLiveUpdates((type, data) => {
-    if (type === 'incident.created') setAnnouncement(data);
-    if (type === 'incident.updated') setAnnouncement((current) => (current?.number === data.number ? data : current));
+    const toast = toastForEvent(type, data);
+    if (toast && push(toast)) notifications.show(toast, () => navigate(toast.link.to));
   });
 
   useEffect(() => {
-    if (!announcement) return;
-    const timer = setTimeout(() => setAnnouncement(null), ANNOUNCEMENT_MS);
-    return () => clearTimeout(timer);
-  }, [announcement]);
+    function onKeyDown(event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
+  const pages = sectionsFor(user).flatMap((section) => section.items);
   useHotkeys({
-    'g o': () => navigate('/'),
-    'g i': () => navigate('/incidents'),
-    'g r': () => navigate('/runbooks'),
-    'g a': () => navigate('/audit'),
-    'g d': () => navigate('/demo'),
-    t: toggle,
+    ...Object.fromEntries(pages.map((page) => [page.keys, () => navigate(page.to)])),
+    t: toggleTheme,
     '?': () => setHelpOpen(true),
+    '[': () => setCollapsed((current) => !current),
   });
 
+  function startTour() {
+    setNavOpen(false);
+    setTouring(true);
+  }
+
+  function endTour() {
+    setTouring(false);
+    setTourSeen(true);
+  }
+
+  async function toggleNotifications() {
+    push(NOTIFICATION_NEWS[await notifications.toggle()]);
+  }
+
+  const service = new URLSearchParams(location.search).get('service');
+  function closeService() {
+    const params = new URLSearchParams(location.search);
+    params.delete('service');
+    navigate(
+      { pathname: location.pathname, search: params.size ? `?${params}` : '', hash: location.hash },
+      { replace: true },
+    );
+  }
+
+  const commands = [
+    {
+      id: 'theme',
+      label: theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme',
+      keys: 't',
+      icon: theme === 'dark' ? SunIcon : MoonIcon,
+      run: toggleTheme,
+    },
+    {
+      id: 'sidebar',
+      label: collapsed ? 'Expand the sidebar' : 'Collapse the sidebar',
+      keys: '[',
+      icon: SidebarIcon,
+      run: () => setCollapsed((current) => !current),
+    },
+    {
+      id: 'notifications',
+      label: notifications.enabled ? 'Turn off browser notifications' : 'Turn on browser notifications',
+      icon: BellIcon,
+      run: toggleNotifications,
+    },
+    { id: 'tour', label: 'Take the guided tour', icon: CompassIcon, run: startTour },
+    { id: 'help', label: 'Show keyboard shortcuts', keys: '?', icon: KeyboardIcon, run: () => setHelpOpen(true) },
+    { id: 'sign-out', label: 'Sign out', icon: SignOutIcon, run: logout },
+  ];
+
+  const shell = { openPalette: () => setPaletteOpen(true), openHelp: () => setHelpOpen(true), startTour, toast: push };
+
   return (
-    <div className={styles.shell}>
-      <a className={styles.skip} href="#main">
-        Skip to content
-      </a>
+    <ConsoleContext.Provider value={shell}>
+      <div className={styles.shell}>
+        <a className={styles.skip} href="#main">
+          Skip to content
+        </a>
 
-      <header className={styles.topbar}>
-        <Link to="/" className={styles.brand} aria-label="OpsPilot overview">
-          <BrandMark />
-        </Link>
+        <Sidebar
+          open={navOpen}
+          collapsed={collapsed && !narrow}
+          connection={connection}
+          theme={theme}
+          notifications={notifications.enabled}
+          onNavigate={() => setNavOpen(false)}
+          onToggleCollapsed={() => setCollapsed((current) => !current)}
+          onToggleTheme={toggleTheme}
+          onToggleNotifications={toggleNotifications}
+          onOpenPalette={() => {
+            setNavOpen(false);
+            setPaletteOpen(true);
+          }}
+          onOpenHelp={() => setHelpOpen(true)}
+        />
+        {navOpen && <div className={styles.scrim} onClick={() => setNavOpen(false)} aria-hidden="true" />}
 
-        <nav className={styles.nav} aria-label="Main">
-          <NavLink to="/" end className={styles.navLink}>
-            Overview
-          </NavLink>
-          <NavLink to="/incidents" className={styles.navLink}>
-            Incidents
-          </NavLink>
-          <NavLink to="/runbooks" className={styles.navLink}>
-            Runbooks
-          </NavLink>
-          <NavLink to="/audit" className={styles.navLink}>
-            Audit log
-          </NavLink>
-          <NavLink to="/demo" className={styles.navLink}>
-            Demo
-          </NavLink>
-        </nav>
-
-        <div className={styles.tools}>
-          <LiveIndicator status={connection} />
-          <button
-            type="button"
-            className={styles.iconButton}
-            onClick={() => setHelpOpen(true)}
-            title="Keyboard shortcuts (?)"
-          >
-            <KeyboardIcon label="Keyboard shortcuts" />
-          </button>
-          <button type="button" className={styles.iconButton} onClick={toggle} title="Switch theme (t)">
-            {theme === 'dark' ? <SunIcon label="Switch to light theme" /> : <MoonIcon label="Switch to dark theme" />}
-          </button>
-          <div className={styles.user}>
-            <span className={styles.userName}>{user.name}</span>
-            <span className="caption">{user.role}</span>
-          </div>
-          <button type="button" className={styles.textButton} onClick={logout}>
-            Sign out
-          </button>
+        <div className={styles.column}>
+          <TopBar onOpenNav={() => setNavOpen(true)} onOpenPalette={() => setPaletteOpen(true)} />
+          <main id="main" className={styles.main}>
+            <Outlet />
+          </main>
         </div>
-      </header>
 
-      <div aria-live="polite" className={styles.announcements}>
-        {announcement && (
-          <div className={styles.announcement}>
-            <span className="caption">New incident</span>
-            <SeverityTag severity={announcement.severity} />
-            <Link
-              to={`/incidents/${announcement.number}`}
-              className={styles.announcementLink}
-              onClick={() => setAnnouncement(null)}
-            >
-              <span className="mono">{incidentId(announcement.number)}</span> {announcement.title}
-              <ArrowRightIcon />
-            </Link>
-            <button type="button" className={styles.iconButton} onClick={() => setAnnouncement(null)}>
-              <CloseIcon label="Dismiss" />
-            </button>
-          </div>
-        )}
+        <Toaster toasts={toasts} onDismiss={dismiss} />
+        {paletteOpen && <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />}
+        {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
+        {service && <ServiceDrawer key={service} name={service} onClose={closeService} />}
+        {touring && <Tour onClose={endTour} />}
       </div>
-
-      <main id="main" className={styles.main}>
-        <Outlet />
-      </main>
-
-      {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
-    </div>
-  );
-}
-
-const CONNECTION_LABEL = { live: 'Live', connecting: 'Connecting', reconnecting: 'Reconnecting' };
-
-function LiveIndicator({ status }) {
-  return (
-    <span className={styles.live} data-status={status} title="Live updates from the server">
-      <span className={styles.liveDot} aria-hidden="true" />
-      {CONNECTION_LABEL[status]}
-    </span>
+    </ConsoleContext.Provider>
   );
 }

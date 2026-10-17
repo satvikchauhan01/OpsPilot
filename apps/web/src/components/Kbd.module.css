@@ -1,0 +1,12 @@
+.key {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 5px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  color: var(--ink-2);
+  font: 500 11px/1.4 var(--font-mono);
+  text-align: center;
+}

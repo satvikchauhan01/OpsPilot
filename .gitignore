@@ -9,6 +9,8 @@ coverage/
 !.env.cloud.example
 # written by scripts/cloud.mjs for each deploy
 deploy/k8s/overlays/cloud/deploy.env
+# the Vercel CLI's link to the relay's project
+.vercel/
 
 *.log
 .DS_Store

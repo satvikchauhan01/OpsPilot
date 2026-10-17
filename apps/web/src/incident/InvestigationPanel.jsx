@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { canRespond, isResponder, useAuth } from '../auth/AuthContext.jsx';
 import { useAiStatus, useInvestigation, useStartInvestigation } from '../lib/queries.js';
-import { clock, duration, incidentId } from '../lib/format.js';
+import { clock, duration, incidentId, plural } from '../lib/format.js';
 import { ACTION_LABEL, CAUSE_LABEL } from '../lib/labels.js';
 import { useNow } from '../hooks/useNow.js';
+import { Button } from '../components/Button.jsx';
 import { Panel } from '../components/Panel.jsx';
 import { Score } from '../components/Score.jsx';
 import { Empty, QueryState } from '../components/States.jsx';
@@ -32,7 +33,7 @@ export function InvestigationPanel({ number, resolved }) {
         STATUS_LABEL[run.status],
         run.model,
         elapsed !== null && duration(elapsed),
-        `${run.usage?.requests ?? 0} model calls`,
+        plural(run.usage?.requests ?? 0, 'model call'),
       ]
         .filter(Boolean)
         .join(' · ')
@@ -41,13 +42,13 @@ export function InvestigationPanel({ number, resolved }) {
       : undefined;
 
   const actions = canStart && (
-    <button type="button" className={styles.run} onClick={() => start.mutate()} disabled={start.isPending}>
+    <Button size="sm" variant="primary" onClick={() => start.mutate()} disabled={start.isPending}>
       {run ? 'Investigate again' : 'Investigate now'}
-    </button>
+    </Button>
   );
 
   return (
-    <Panel title="AI investigation" meta={meta} actions={actions} className={styles.panel}>
+    <Panel title="AI investigation" meta={meta} actions={actions} className={styles.panel} id="investigation">
       <QueryState query={investigation} loadingLabel="Loading the investigation">
         {(current) => {
           if (!current) {
@@ -77,7 +78,7 @@ export function InvestigationPanel({ number, resolved }) {
                 ) : current.status === 'failed' ? (
                   <p className={styles.error}>The investigation stopped: {current.error}</p>
                 ) : (
-                  <Working status={current.status} steps={current.steps.length} />
+                  <Working status={current.status} steps={current.steps} />
                 )}
                 {openEvidence && evidence.has(openEvidence) && (
                   <EvidenceDetail item={evidence.get(openEvidence)} onClose={() => setOpenEvidence(null)} />
@@ -98,17 +99,31 @@ export function InvestigationPanel({ number, resolved }) {
   );
 }
 
+// While the model works, the step it is on shows here as it happens; every step also lands
+// in the list next to it.
 function Working({ status, steps }) {
+  const latest = steps.at(-1);
+  const evidence = steps.filter((step) => step.evidenceId).length;
   return (
     <div className={styles.working} role="status">
       <span className={styles.pulse} aria-hidden="true" />
       <div>
         <p className={styles.workingTitle}>{status === 'queued' ? 'Waiting for its turn' : 'Reading the evidence'}</p>
-        <p className={styles.muted}>
-          {status === 'queued'
-            ? 'Investigations run one at a time to stay within the model quota.'
-            : `${steps} steps so far. Findings appear here when the investigation is done.`}
-        </p>
+        {status === 'queued' ? (
+          <p className={styles.muted}>Investigations run one at a time to stay within the model quota.</p>
+        ) : (
+          <>
+            {latest && (
+              <p className={styles.now}>
+                <span className="caption">Now</span> {latest.title}
+              </p>
+            )}
+            <p className={styles.muted}>
+              {plural(steps.length, 'step')} and {plural(evidence, 'piece', 'pieces')} of evidence so far. The findings
+              appear here when it is done, each one citing the evidence behind it.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
@@ -197,9 +212,9 @@ function EvidenceDetail({ item, onClose }) {
       <header>
         <span className={styles.evidenceId}>{item.id}</span>
         <span className={styles.evidenceTitle}>{item.title}</span>
-        <button type="button" className={styles.close} onClick={onClose}>
+        <Button size="sm" variant="ghost" onClick={onClose}>
           Close
-        </button>
+        </Button>
       </header>
       <p className={styles.muted}>
         Tool <span className="mono">{item.tool}</span> at {clock(item.at)}

@@ -17,8 +17,29 @@ export function useTopology() {
 // appear folded into incident timelines.
 const FEED_KINDS = ['deploy', 'config', 'restart', 'scale', 'rollout', 'pod_restart'];
 
-export function useChanges(minutes = 60) {
-  return useQuery({ queryKey: ['changes', minutes], queryFn: () => api.changes(minutes, FEED_KINDS) });
+export function useChanges(minutes = 60, service) {
+  return useQuery({
+    queryKey: ['changes', minutes, service],
+    queryFn: () => api.changes(minutes, FEED_KINDS, service),
+  });
+}
+
+export function useServiceMetrics(name, minutes) {
+  return useQuery({
+    queryKey: ['service-metrics', name, minutes],
+    queryFn: () => api.serviceMetrics(name, minutes),
+    enabled: Boolean(name),
+    refetchInterval: METRICS_POLL_MS,
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useInsights(days) {
+  return useQuery({
+    queryKey: ['insights', days],
+    queryFn: () => api.insights(days),
+    placeholderData: (previous) => previous,
+  });
 }
 
 export function useIncidents(filters) {
@@ -63,8 +84,8 @@ export function useSimilarIncidents(number) {
 // Runbooks only change when the server restarts with edited files.
 const RUNBOOK_STALE_MS = 5 * 60_000;
 
-export function useRunbooks() {
-  return useQuery({ queryKey: ['runbooks'], queryFn: api.runbooks, staleTime: RUNBOOK_STALE_MS });
+export function useRunbooks(enabled = true) {
+  return useQuery({ queryKey: ['runbooks'], queryFn: api.runbooks, staleTime: RUNBOOK_STALE_MS, enabled });
 }
 
 export function useRunbook(slug) {
@@ -93,9 +114,10 @@ export function useAiStatus() {
 }
 
 // The latest investigation of an incident, or null if there hasn't been one.
-export function useInvestigation(number) {
+export function useInvestigation(number, enabled = true) {
   return useQuery({
     queryKey: ['investigation', number],
+    enabled,
     queryFn: async () => {
       try {
         return await api.investigation(number);
@@ -122,8 +144,8 @@ export function useRemediationStatus() {
   return useQuery({ queryKey: ['remediation'], queryFn: api.remediation, staleTime: 5 * 60_000 });
 }
 
-export function useActions(number) {
-  return useQuery({ queryKey: ['actions', number], queryFn: () => api.actions(number) });
+export function useActions(number, enabled = true) {
+  return useQuery({ queryKey: ['actions', number], queryFn: () => api.actions(number), enabled });
 }
 
 // Proposing, approving and rejecting all change the incident's actions; the server's live
@@ -173,9 +195,10 @@ export function useIncidentStatus(number) {
 }
 
 // The postmortem of a resolved incident, or null when none has been written yet.
-export function usePostmortem(number) {
+export function usePostmortem(number, enabled = true) {
   return useQuery({
     queryKey: ['postmortem', number],
+    enabled,
     queryFn: async () => {
       try {
         return await api.postmortem(number);
@@ -231,4 +254,32 @@ export function useResetDemo() {
     mutationFn: api.resetDemo,
     onSuccess: (status) => queryClient.setQueryData(['demo'], status),
   });
+}
+
+export function useUsers() {
+  return useQuery({ queryKey: ['users'], queryFn: api.users });
+}
+
+// After a team change the list refreshes, and so does the audit log, which records it.
+function useTeamMutation(mutationFn) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+    },
+  });
+}
+
+export function useCreateUser() {
+  return useTeamMutation(api.createUser);
+}
+
+export function useSetRole() {
+  return useTeamMutation(({ id, role }) => api.setRole(id, role));
+}
+
+export function useRemoveUser() {
+  return useTeamMutation(api.removeUser);
 }

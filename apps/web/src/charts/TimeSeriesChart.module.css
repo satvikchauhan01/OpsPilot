@@ -132,6 +132,17 @@
   stroke-width: 1;
 }
 
+/* In a replay: the future is veiled until the playhead reaches it */
+.playhead rect {
+  fill: var(--surface);
+  opacity: 0.78;
+}
+
+.playhead line {
+  stroke: var(--signal);
+  stroke-width: 1.5;
+}
+
 .dot {
   stroke: var(--surface);
   stroke-width: 2;

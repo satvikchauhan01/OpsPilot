@@ -1,0 +1,164 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+}
+
+.roles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.roles li {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: var(--space-4) var(--space-5) var(--space-4) 0;
+}
+
+.roles li + li {
+  padding-left: var(--space-5);
+  border-left: 1px solid var(--line);
+}
+
+.roleName {
+  font: 600 12px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.roleCan {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 10px var(--space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.table thead th {
+  font: 500 10px/1.2 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.table tbody tr:last-child th,
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.name {
+  font-weight: 500;
+}
+
+.you {
+  margin-left: 8px;
+  padding: 2px 6px;
+  border: 1px solid var(--signal);
+  border-radius: var(--radius-sm);
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+
+.email,
+.joined {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.email {
+  font-family: var(--font-mono);
+}
+
+.role {
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.role:disabled {
+  opacity: 0.6;
+}
+
+.actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-4);
+}
+
+.password {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.password input {
+  font-family: var(--font-mono);
+}
+
+.formButtons {
+  display: flex;
+  gap: var(--space-2);
+  align-self: flex-end;
+  margin-bottom: 20px;
+}
+
+.error {
+  width: 100%;
+  color: var(--critical);
+}
+
+.note {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .roles {
+    grid-template-columns: 1fr;
+  }
+
+  .roles li + li {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .email,
+  .joined,
+  .table thead th:nth-child(2),
+  .table thead th:nth-child(4) {
+    display: none;
+  }
+}

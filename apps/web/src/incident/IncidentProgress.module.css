@@ -1,0 +1,39 @@
+.progress {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.step {
+  width: 14px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--line);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.step[data-state='done'] {
+  background: var(--ink-2);
+  box-shadow: none;
+}
+
+.step[data-state='waiting'] {
+  background: var(--warning);
+  box-shadow: none;
+}
+
+.step[data-state='active'] {
+  background: var(--info);
+  box-shadow: none;
+  animation: working 1.2s ease-in-out infinite;
+}
+
+.step[data-state='failed'] {
+  background: var(--critical);
+  box-shadow: none;
+}
+
+@keyframes working {
+  50% {
+    opacity: 0.4;
+  }
+}

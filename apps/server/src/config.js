@@ -50,6 +50,8 @@ const schema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default('gemini-3.5-flash-lite'),
   GEMINI_FALLBACK_MODEL: z.string().default('gemini-3.1-flash-lite'),
+  GEMINI_RELAY_URL: z.url().optional(),
+  GEMINI_RELAY_TOKEN: z.string().min(16, 'use at least 16 random characters').optional(),
   LLM_REQUESTS_PER_MINUTE: z.coerce.number().int().positive().default(8),
   LLM_DAILY_REQUEST_BUDGET: z.coerce.number().int().positive().default(200),
   INVESTIGATION_DELAY_SECONDS: z.coerce.number().int().nonnegative().default(60),
@@ -68,6 +70,11 @@ const isProduction = env.NODE_ENV === 'production';
 
 if (isProduction && !env.SESSION_SECRET) {
   console.error('SESSION_SECRET is required in production.');
+  process.exit(1);
+}
+
+if (env.GEMINI_RELAY_URL && !env.GEMINI_RELAY_TOKEN) {
+  console.error('GEMINI_RELAY_URL needs GEMINI_RELAY_TOKEN, the token the relay checks.');
   process.exit(1);
 }
 
@@ -108,6 +115,8 @@ export const config = {
     apiKey: env.GEMINI_API_KEY,
     model: env.GEMINI_MODEL,
     fallbackModel: env.GEMINI_FALLBACK_MODEL || null,
+    // Only where Gemini refuses the server's location (deploy/gemini-relay)
+    relay: env.GEMINI_RELAY_URL ? { url: env.GEMINI_RELAY_URL, token: env.GEMINI_RELAY_TOKEN } : null,
     requestsPerMinute: env.LLM_REQUESTS_PER_MINUTE,
     dailyRequestBudget: env.LLM_DAILY_REQUEST_BUDGET,
     investigationDelayMs: env.INVESTIGATION_DELAY_SECONDS * 1000,

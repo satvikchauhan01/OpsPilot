@@ -1,0 +1,139 @@
+.region {
+  position: fixed;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  z-index: 50;
+  display: grid;
+  gap: var(--space-2);
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 12px 14px 16px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--ink-3);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  pointer-events: auto;
+  animation: enter 0.22s var(--ease-out);
+}
+
+.toast > span:first-child {
+  margin-top: 5px;
+}
+
+.toast[data-tone='critical'] {
+  border-left-color: var(--critical);
+}
+
+.toast[data-tone='warning'] {
+  border-left-color: var(--warning);
+}
+
+.toast[data-tone='ok'] {
+  border-left-color: var(--ok);
+}
+
+.toast[data-tone='info'] {
+  border-left-color: var(--info);
+}
+
+.body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.detail {
+  color: var(--ink-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 4px;
+  font: 500 12px/1 var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--signal);
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+/* How long the toast has left, as a hairline that runs out */
+.timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--line-strong);
+  transform-origin: left;
+  animation: drain var(--duration) linear forwards;
+}
+
+.toast[data-held] .timer {
+  animation-play-state: paused;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes drain {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .region {
+    right: var(--space-4);
+    bottom: var(--space-4);
+  }
+}

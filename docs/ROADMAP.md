@@ -1,7 +1,8 @@
 # OpsPilot — Roadmap
 
-The build happens in six phases. Each one ends with a review, and the next phase starts
-only after the current one has been committed. IDs such as `DS-5` refer to
+The build happened in six phases, and a seventh was added afterwards to make the console a
+strength of the project. Each one ends with a review, and the next phase starts only after
+the current one has been committed. IDs such as `DS-5` refer to
 [REQUIREMENTS.md](REQUIREMENTS.md), which defines what "done" means.
 
 | Phase | Theme | Status |
@@ -11,7 +12,8 @@ only after the current one has been committed. IDs such as `DS-5` refer to
 | 3 | AI investigation and root-cause analysis | Done |
 | 4 | Knowledge: runbook RAG and incident memory | Done |
 | 5 | Remediation: approval, execution, verification | Done |
-| 6 | Postmortems, hardening and public deployment | Done locally, waiting for the VM to deploy |
+| 6 | Postmortems, hardening and public deployment | Done |
+| 7 | Console: navigation, replay, insights, team, live notifications | Done |
 
 ---
 
@@ -287,7 +289,7 @@ earlier occurrence.
 - [x] Security pass covering rate limits, headers, CORS, validation and exposure — SE-3 to SE-6
 - [x] Container images for the server and web apps — DP-1
 - [x] `cloud` Kustomize overlay with persistent volumes, ingress and TLS — DP-2, DP-3, DP-5
-- [ ] Deploy to a free VM running k3s — C-8, DP-2
+- [x] Deploy to a free VM running k3s — C-8, DP-2
 - [x] README with architecture, screenshots and a walkthrough, plus final lint and tests — QA-2 to QA-4
 - [x] Full acceptance run against REQUIREMENTS.md, locally — Definition of done ([acceptance.md](acceptance.md))
 
@@ -331,5 +333,82 @@ works if you can't add a card) and a free domain or subdomain.
   timelines.
 - QA: 108 unit tests pass (14 new), `npm run lint` is clean, and the console builds.
 
-**Still to do:** the public deployment ([DEPLOYMENT.md](DEPLOYMENT.md)) and its checks:
-C-8, DP-2, DP-3, DP-5 (a VM reboot), and the full demo on the public URL.
+**Verification (2026-10-18, public):** https://opspilot-main.duckdns.org, on an Azure for
+Students VM (Standard_B2als_v2 in East Asia, Hong Kong).
+
+- C-8 and DP-3: a Let's Encrypt certificate from the first deploy, `http://` redirected to
+  `https://`, and the security headers in place. From outside, only 22, 80 and 443 answer.
+- The demo as a guest: S1 became INC-45. The AI named checkout 1.4.2's TypeError in 8 s
+  with 2 model calls, and the guest approved the rollback. It rolled out in 15 s and was
+  verified, and the incident resolved itself after 5 quiet minutes, with its postmortem
+  drafted 3 s later. S4 became INC-47 and went the same way: payments saturated, scaled
+  from 2 to 4 replicas, verified and written up. S2 and S3 ran locally (Phases 5 and 6),
+  not here.
+- DP-4: a second scenario while S1 ran and one during the cooldown both got `409`, and S1
+  reset itself on time.
+- DP-5: after a reboot the site answered again in 168 s, with nothing done by hand. The
+  reboot showed up as INC-46 (TargetDown on three services while their pods restarted),
+  which resolved itself. The certificate and Prometheus' data survived.
+- Load: the stack idles at about 0.2 of a CPU and 2.6 GB of the VM's 4 GB. During S4's
+  fivefold traffic it uses about 0.85 of a CPU, above the B2als_v2's 30% baseline. The
+  CPU credits saved while idle cover that.
+- Found and fixed along the way: Gemini refuses Hong Kong ("User location is not supported
+  for the API use"), so every investigation failed. The server can now reach Gemini
+  through a relay on Vercel (`deploy/gemini-relay`, `GEMINI_RELAY_URL`), which needs its
+  token and stores no key. The server's pod didn't start at first, because Kubernetes can't
+  verify that a named user (`node`) isn't root, so it now runs as uid 1000. Docker's
+  provenance attestations gave unchanged shop images a new ID on every build, so every
+  deploy restarted the shop. They're built without them now.
+
+---
+
+## Phase 7 — Console
+
+**Goal:** make the console a strength of the project, as solid as the backend behind it:
+easier to find your way around, more to see, and more to do with what the server already
+knows.
+
+- [x] Sidebar navigation with open-incident count, breadcrumbs, and a command palette — UI-6
+- [x] A detail panel for every service, with its own metrics endpoint — UI-7
+- [x] Incident replay — UI-8
+- [x] Insights page and its endpoint — UI-9
+- [x] Live notifications, in the console and optionally in the browser — UI-10
+- [x] Guided tour for first-time guests — UI-11
+- [x] Team page, with role changes that reach sessions already open — SE-7
+- [x] A bolder layout: headline numbers, each incident's path from detection to postmortem,
+      a service map with moving traffic, a demo page that follows the running scenario
+- [x] README screenshots taken again
+
+**Verification (2026-10-17, locally):**
+
+- S1, started from the demo page as a guest, became INC-42. Every step reached the console
+  as it happened: "INC-042 opened" with the first alert, then "Root cause for INC-042" and
+  "Fix waiting for approval" when the investigation finished, 5 s after it started. The
+  incident's path, the Fix tab's badge and the demo page's steps followed along. The guest
+  approved the rollback ("Fix rolling out"), it was verified, and INC-42 resolved itself at
+  17:14 with its postmortem drafted 2 s later.
+- Replays of INC-40 and INC-42: the map, the alerts firing, the story and the charts'
+  playhead follow the clock, and stepping with ← and → stops at every event, including the
+  moment the fix waited for approval.
+- Team changes were checked against a scratch database, so the real audit log didn't get
+  test records: a responder added from the page was demoted to viewer while signed in
+  elsewhere, and their next request already had the viewer role and was refused a fix
+  rejection (`403`). Removed, their session got `401`. An admin changing or removing
+  themselves gets `409`. The audit log recorded all three changes by name and role, and
+  the chain verified. The scratch database was dropped afterwards.
+- Insights over the real history: 42 incidents in 30 days, a median of 1 m 23 s to the
+  root cause, 5 m 19 s to a verified fix and 2 m 22 s to resolution, and 8 of 9 fixes that
+  ran worked.
+- The tour went through its seven steps over four pages, each with its element lit. At
+  375 px no page scrolls sideways and the sidebar opens as a drawer. The overview,
+  insights, replay and postmortem were checked in both themes.
+- Found and fixed along the way: typing quickly into the runbook search lost characters,
+  because every key rewrote the address; the box now keeps the text and the address follows
+  300 ms later. Dialogs closed again right after opening in development, where React runs
+  effects twice. The main bundle passed 500 kB; insights, the replay and the team page now
+  load on first use (478 kB, 150 kB gzipped).
+- Not checked here: browser notifications need the browser's permission, which the
+  embedded test browser can't grant. The permission request and the "blocked" message are
+  in place; the notification itself was not seen.
+- QA: 120 unit tests pass (12 new: insights statistics, team rules and incident progress),
+  `npm run lint` is clean, Prettier has formatted every file, and the console builds.

@@ -16,6 +16,7 @@ import { useNow } from '../hooks/useNow.js';
 import { Panel } from '../components/Panel.jsx';
 import { Empty, QueryState } from '../components/States.jsx';
 import { ServiceChip, ToneMark } from '../components/Tags.jsx';
+import { Button } from '../components/Button.jsx';
 import styles from './RemediationPanel.module.css';
 
 const ACTION_TYPES = ['rollback', 'restart', 'scale'];
@@ -35,18 +36,13 @@ export function RemediationPanel({ incident }) {
   const canPropose = canRespond(user) && incident.status !== 'resolved' && !busy;
 
   const toggle = canPropose && (
-    <button
-      type="button"
-      className={styles.secondary}
-      onClick={() => setProposing(!proposing)}
-      aria-expanded={proposing}
-    >
-      {proposing ? 'Cancel' : 'Propose a different fix'}
-    </button>
+    <Button size="sm" onClick={() => setProposing(!proposing)} aria-expanded={proposing}>
+      {proposing ? 'Cancel' : current ? 'Propose a different fix' : 'Propose a fix'}
+    </Button>
   );
 
   return (
-    <Panel title="Remediation" meta={current && ACTION_STATUS_LABEL[current.status]} actions={toggle}>
+    <Panel title="Remediation" meta={current && ACTION_STATUS_LABEL[current.status]} actions={toggle} id="remediation">
       <div className={styles.body}>
         {status.data && !status.data.enabled && (
           <p className={styles.notice}>OpsPilot can propose fixes but not run them. {status.data.reason}</p>
@@ -197,17 +193,10 @@ function Decision({ action, incident, status, responder }) {
     <div className={styles.decision}>
       {step === null && (
         <div className={styles.buttons}>
-          <button
-            type="button"
-            className={styles.primary}
-            disabled={!status?.enabled}
-            onClick={() => setStep('confirm')}
-          >
+          <Button variant="primary" disabled={!status?.enabled} onClick={() => setStep('confirm')}>
             Approve and run
-          </button>
-          <button type="button" className={styles.secondary} onClick={() => setStep('reject')}>
-            Reject
-          </button>
+          </Button>
+          <Button onClick={() => setStep('reject')}>Reject</Button>
         </div>
       )}
 
@@ -215,17 +204,14 @@ function Decision({ action, incident, status, responder }) {
         <div className={styles.confirm}>
           <p>{consequence(action, status?.verificationWindowMinutes ?? 3)}</p>
           <div className={styles.buttons}>
-            <button
-              type="button"
-              className={styles.danger}
+            <Button
+              variant="danger"
               disabled={approve.isPending}
               onClick={() => approve.mutate(action.id, { onSettled: () => setStep(null) })}
             >
               {approve.isPending ? 'Starting…' : `${ACTION_LABEL[action.type]} now`}
-            </button>
-            <button type="button" className={styles.secondary} onClick={() => setStep(null)}>
-              Cancel
-            </button>
+            </Button>
+            <Button onClick={() => setStep(null)}>Cancel</Button>
           </div>
         </div>
       )}
@@ -249,12 +235,10 @@ function Decision({ action, incident, status, responder }) {
             onChange={(event) => setReason(event.target.value)}
           />
           <div className={styles.buttons}>
-            <button type="submit" className={styles.primary} disabled={reject.isPending}>
+            <Button type="submit" variant="primary" disabled={reject.isPending}>
               Reject the fix
-            </button>
-            <button type="button" className={styles.secondary} onClick={() => setStep(null)}>
-              Cancel
-            </button>
+            </Button>
+            <Button onClick={() => setStep(null)}>Cancel</Button>
           </div>
         </form>
       )}
@@ -466,9 +450,9 @@ function ProposeForm({ incident, maxReplicas, onDone }) {
           onChange={(event) => setReason(event.target.value)}
         />
       </label>
-      <button type="submit" className={styles.primary} disabled={propose.isPending}>
+      <Button type="submit" variant="primary" disabled={propose.isPending}>
         Propose
-      </button>
+      </Button>
       {propose.error && <p className={styles.error}>{propose.error.message}</p>}
     </form>
   );

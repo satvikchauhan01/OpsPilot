@@ -1,11 +1,26 @@
 import { HttpError } from '../http/errors.js';
 import { readSession } from './session.js';
+import { accounts } from './accounts.js';
 
-export function requireSession(req, res, next) {
-  const user = readSession(req);
-  if (!user) return next(new HttpError(401, 'sign in first'));
-  req.user = user;
-  next();
+// The cookie says who signed in. For team accounts the role and name come from the account
+// as it is now, so a change an admin makes applies to sessions that are already open.
+// Guests have no account: their session is all there is.
+export async function requireSession(req, res, next) {
+  const session = readSession(req);
+  if (!session) return next(new HttpError(401, 'sign in first'));
+  if (session.role === 'guest') {
+    req.user = session;
+    return next();
+  }
+
+  try {
+    const account = await accounts.current(session.id);
+    if (!account) return next(new HttpError(401, 'this account no longer exists'));
+    req.user = { ...session, ...account };
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
 // Admins can do everything a responder can.

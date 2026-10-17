@@ -20,8 +20,17 @@
   gap: var(--space-3);
 }
 
+.kicker {
+  margin-bottom: calc(-1 * var(--space-2));
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+
 .indexHeader h1 {
-  font-size: 24px;
+  font-size: 30px;
+  letter-spacing: -0.02em;
 }
 
 .search {

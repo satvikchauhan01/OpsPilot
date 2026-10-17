@@ -1,0 +1,115 @@
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+/* The page stays usable: the dimming lets clicks through, so the highlighted button works */
+.spotlight {
+  position: fixed;
+  border-radius: var(--radius);
+  outline: 2px solid var(--signal);
+  outline-offset: 0;
+  box-shadow: 0 0 0 9999px var(--scrim);
+  transition:
+    top 0.25s var(--ease-out),
+    left 0.25s var(--ease-out),
+    width 0.25s var(--ease-out),
+    height 0.25s var(--ease-out);
+}
+
+.dim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+}
+
+.card {
+  position: fixed;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-top: 3px solid var(--signal);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  pointer-events: auto;
+  animation: appear 0.2s var(--ease-out);
+}
+
+.card:focus {
+  outline: none;
+}
+
+.count {
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+
+.title {
+  font-size: 18px;
+}
+
+.body {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.dots {
+  display: flex;
+  gap: 5px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dots li {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+
+.dots li[data-state='done'] {
+  background: var(--ink-3);
+}
+
+.dots li[data-state='current'] {
+  width: 24px;
+  background: var(--signal);
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: 4px;
+}
+
+.skip {
+  margin-right: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.skip:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}

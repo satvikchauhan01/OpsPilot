@@ -192,7 +192,12 @@ function createRecorder(investigation) {
   function save() {
     return enqueue(async () => {
       await doc.save();
-      bus.publish('investigation.updated', { incidentNumber: doc.incidentNumber, id: doc.id, status: doc.status });
+      bus.publish('investigation.updated', {
+        incidentNumber: doc.incidentNumber,
+        id: doc.id,
+        status: doc.status,
+        finding: doc.result?.hypotheses?.[0]?.title,
+      });
     });
   }
 

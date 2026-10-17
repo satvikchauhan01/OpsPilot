@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(320px, 440px) 1fr;
+  grid-template-columns: minmax(340px, 460px) 1fr;
   background: var(--bg);
 }
 
@@ -132,19 +132,45 @@
   font-size: 13px;
 }
 
-.trace {
-  position: relative;
+.story {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: var(--space-7);
+  gap: var(--space-4);
+  padding: var(--space-7) clamp(var(--space-6), 6vw, 96px);
   overflow: hidden;
 }
 
+.kicker {
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+
+.storyTitle {
+  max-width: 18ch;
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.storyLede {
+  max-width: 60ch;
+  color: var(--ink-2);
+  font-size: 16px;
+}
+
+.trace {
+  max-width: 760px;
+  margin-top: var(--space-4);
+}
+
 .trace svg {
+  display: block;
   width: 100%;
   height: auto;
-  max-height: 360px;
+  overflow: visible;
 }
 
 .baseline {
@@ -156,6 +182,13 @@
   stroke: var(--warning);
   stroke-width: 1;
   opacity: 0.6;
+}
+
+.axisLabel {
+  fill: var(--warning);
+  font: 500 11px var(--font-mono);
+  text-anchor: end;
+  opacity: 0.8;
 }
 
 /* pathLength="1" on the path makes the dash maths independent of its drawn size */
@@ -170,17 +203,42 @@
   animation: draw 2.4s ease-out 0.2s forwards;
 }
 
-.marker {
-  fill: var(--signal);
-  stroke: var(--bg);
-  stroke-width: 2;
+.point {
+  opacity: 0;
+  animation: appear 0.3s ease-out forwards;
 }
 
-.traceLabels {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-4);
-  margin-top: var(--space-3);
+.point circle {
+  fill: var(--bg);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.point text {
+  fill: var(--ink);
+  font: 600 11px var(--font-mono);
+  text-anchor: middle;
+}
+
+.steps {
+  display: grid;
+  gap: 6px;
+  max-width: 62ch;
+  margin: 0;
+  padding-left: 22px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.steps li::marker {
+  font: 600 12px var(--font-mono);
+  color: var(--ink);
+}
+
+@keyframes appear {
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes draw {
@@ -199,7 +257,12 @@
     padding: var(--space-6) var(--space-4);
   }
 
-  .trace {
-    display: none;
+  .story {
+    padding: var(--space-6) var(--space-4);
+    border-top: 1px solid var(--line);
+  }
+
+  .storyTitle {
+    font-size: 28px;
   }
 }

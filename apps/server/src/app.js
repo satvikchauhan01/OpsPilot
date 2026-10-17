@@ -19,6 +19,7 @@ import { actionsRouter, incidentActionsRouter, remediationStatusRouter } from '.
 import { auditRouter } from './audit/routes.js';
 import { postmortemRouter } from './postmortems/routes.js';
 import { demoRouter } from './demo/routes.js';
+import { insightsRouter } from './insights/routes.js';
 
 export function createApp(context) {
   const app = express();
@@ -58,6 +59,7 @@ export function createApp(context) {
   app.use('/api/changes', changesRouter(context));
   app.use('/api/runbooks', runbooksRouter(context));
   app.use('/api/demo', demoRouter(context));
+  app.use('/api/insights', insightsRouter());
   app.use('/api/users', usersRouter(context));
 
   app.use('/api', handleApiNotFound);

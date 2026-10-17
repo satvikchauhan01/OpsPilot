@@ -33,8 +33,10 @@ export const api = {
   guest: () => request('/auth/guest', { method: 'POST' }),
 
   services: () => request('/services'),
+  serviceMetrics: (name, minutes) => request(`/services/${encodeURIComponent(name)}/metrics${query({ minutes })}`),
   topology: () => request('/topology'),
-  changes: (minutes, kinds) => request(`/changes${query({ minutes, kinds: kinds?.join(',') })}`),
+  changes: (minutes, kinds, service) => request(`/changes${query({ minutes, kinds: kinds?.join(','), service })}`),
+  insights: (days) => request(`/insights${query({ days })}`),
 
   incidents: (filters = {}) => request(`/incidents${query(filters)}`),
   incident: (number) => request(`/incidents/${number}`),
@@ -73,4 +75,9 @@ export const api = {
   demo: () => request('/demo'),
   startScenario: (key) => request(`/demo/scenarios/${key}`, { method: 'POST' }),
   resetDemo: () => request('/demo/reset', { method: 'POST' }),
+
+  users: () => request('/users'),
+  createUser: (user) => request('/users', { method: 'POST', body: user }),
+  setRole: (id, role) => request(`/users/${id}`, { method: 'PATCH', body: { role } }),
+  removeUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
 };

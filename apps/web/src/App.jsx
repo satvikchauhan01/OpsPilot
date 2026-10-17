@@ -11,19 +11,24 @@ import { AuditPage } from './pages/AuditPage.jsx';
 import { DemoPage } from './pages/DemoPage.jsx';
 import { NotFoundPage } from './pages/NotFoundPage.jsx';
 
-// The runbook reader brings a Markdown renderer that no other page needs, so it loads on
-// first visit instead of with the rest of the app.
-const RunbooksPage = lazy(() =>
-  import('./pages/RunbooksPage.jsx').then((module) => ({ default: module.RunbooksPage })),
-);
-
-export function App() {
-  const runbooks = (
-    <Suspense fallback={<Loading label="Loading runbooks" />}>
-      <RunbooksPage />
+// Pages most visits never open load on first use instead of with the app: the runbook
+// reader brings a Markdown renderer, insights and the replay their charts, and the team
+// page is for admins only.
+function later(load, name, label) {
+  const Page = lazy(() => load().then((module) => ({ default: module[name] })));
+  return (
+    <Suspense fallback={<Loading label={label} />}>
+      <Page />
     </Suspense>
   );
+}
 
+const runbooks = later(() => import('./pages/RunbooksPage.jsx'), 'RunbooksPage', 'Loading runbooks');
+const insights = later(() => import('./pages/InsightsPage.jsx'), 'InsightsPage', 'Loading insights');
+const replay = later(() => import('./pages/ReplayPage.jsx'), 'ReplayPage', 'Loading the replay');
+const team = later(() => import('./pages/TeamPage.jsx'), 'TeamPage', 'Loading the team');
+
+export function App() {
   return (
     <AuthProvider>
       <Routes>
@@ -38,9 +43,12 @@ export function App() {
           <Route index element={<OverviewPage />} />
           <Route path="incidents" element={<IncidentsPage />} />
           <Route path="incidents/:number" element={<IncidentPage />} />
+          <Route path="incidents/:number/replay" element={replay} />
+          <Route path="insights" element={insights} />
           <Route path="runbooks" element={runbooks} />
           <Route path="runbooks/:slug" element={runbooks} />
           <Route path="audit" element={<AuditPage />} />
+          <Route path="team" element={team} />
           <Route path="demo" element={<DemoPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

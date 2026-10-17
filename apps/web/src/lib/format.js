@@ -59,6 +59,25 @@ export function timeAgo(date, now = Date.now()) {
   return `${Math.round(hours / 24)} d ago`;
 }
 
+const dayFormat = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+const dayWithYearFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+
+// "Today", "Yesterday", "Fri 26 Sep", or with the year once it isn't this year.
+export function dayLabel(date, now = Date.now()) {
+  const day = new Date(date);
+  const today = new Date(now);
+  const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysAgo = Math.round((startOf(today) - startOf(day)) / 86_400_000);
+  if (daysAgo === 0) return 'Today';
+  if (daysAgo === 1) return 'Yesterday';
+  return day.getFullYear() === today.getFullYear() ? dayFormat.format(day) : dayWithYearFormat.format(day);
+}
+
+// "1 incident", "2 incidents"
+export function plural(count, word, many = `${word}s`) {
+  return `${count} ${count === 1 ? word : many}`;
+}
+
 export function incidentId(number) {
   return `INC-${String(number).padStart(3, '0')}`;
 }

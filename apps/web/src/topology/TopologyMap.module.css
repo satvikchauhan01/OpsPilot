@@ -12,32 +12,38 @@
   fill: var(--line-strong);
 }
 
+.link {
+  transition: opacity 0.15s;
+}
+
+.link[data-dimmed],
+.node[data-dimmed] {
+  opacity: 0.22;
+}
+
 .edge {
   fill: none;
   stroke: var(--line-strong);
-  stroke-width: 1.5;
-  transition: opacity 0.15s;
 }
 
 .edge[data-failing] {
-  stroke: var(--critical);
-  stroke-width: 2;
-  stroke-dasharray: 6 5;
-  animation: flow 0.9s linear infinite;
+  stroke: color-mix(in srgb, var(--critical) 70%, var(--line-strong));
 }
 
-.edge[data-dimmed],
-.node[data-dimmed] {
-  opacity: 0.25;
+.packet {
+  fill: var(--ink-2);
+}
+
+.packet[data-failing] {
+  fill: var(--critical);
 }
 
 .node {
-  cursor: pointer;
   transition: opacity 0.15s;
 }
 
-.node[data-external] {
-  cursor: default;
+.node[data-interactive] {
+  cursor: pointer;
 }
 
 .node:focus-visible {
@@ -53,30 +59,56 @@
   fill: var(--surface-2);
   stroke: var(--line-strong);
   stroke-width: 1;
+  transition:
+    fill 0.15s,
+    stroke 0.15s;
 }
 
-.node:hover .box,
-.node[data-selected] .box {
+.node[data-interactive]:hover .box {
   fill: var(--hover);
+  stroke: var(--ink-3);
 }
 
 .node[data-external] .box {
   fill: transparent;
   stroke: var(--line);
+  stroke-dasharray: 3 3;
+}
+
+.node[data-state='warning'] .box {
+  stroke: var(--warning);
+}
+
+.node[data-state='critical'] .box {
+  stroke: var(--critical);
+  stroke-width: 1.5;
 }
 
 .node[data-role='suspect'] .box {
   stroke: var(--critical);
-  stroke-width: 2;
+  stroke-width: 2.5;
 }
 
 .node[data-role='impacted'] .box {
-  stroke: var(--warning);
-  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
 }
 
-.node[data-role='alerting'] .box {
-  stroke: var(--warning);
+.health[data-state='ok'] {
+  fill: var(--ok);
+}
+
+.health[data-state='warning'] {
+  fill: var(--warning);
+}
+
+.health[data-state='critical'] {
+  fill: var(--critical);
+}
+
+.node[data-state='critical'] .health {
+  animation: beat 1.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .name {
@@ -89,13 +121,21 @@
   font: 400 11px var(--font-mono);
 }
 
+.stats[data-alert] {
+  fill: var(--warning);
+}
+
+.node[data-state='critical'] .stats[data-alert] {
+  fill: var(--critical);
+}
+
 .node[data-external] .name {
   fill: var(--ink-2);
 }
 
 .badge {
   font: 500 10px var(--font-mono);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   text-anchor: end;
   fill: var(--ink-2);
@@ -109,8 +149,8 @@
   fill: var(--warning);
 }
 
-@keyframes flow {
-  to {
-    stroke-dashoffset: -22;
+@keyframes beat {
+  50% {
+    transform: scale(1.35);
   }
 }

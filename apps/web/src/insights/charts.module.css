@@ -1,0 +1,76 @@
+.plot {
+  position: relative;
+}
+
+.grid {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.baseline {
+  stroke: var(--axis);
+  stroke-width: 1;
+}
+
+.tickY,
+.tickX {
+  fill: var(--ink-3);
+  font: 400 11px var(--font-mono);
+}
+
+.tickY {
+  text-anchor: end;
+}
+
+.tickX {
+  text-anchor: middle;
+}
+
+.critical {
+  fill: var(--critical);
+}
+
+.warning {
+  fill: var(--warning);
+}
+
+.neutral {
+  fill: var(--ink-3);
+}
+
+g[data-dimmed] .critical,
+g[data-dimmed] .warning,
+g[data-dimmed] .neutral {
+  opacity: 0.4;
+}
+
+.hit {
+  fill: transparent;
+}
+
+/* Each dot keeps a ring of the surface around it, so overlapping dots stay apart */
+.dot {
+  stroke: var(--surface);
+  stroke-width: 2;
+  transition: r 0.1s;
+}
+
+.dot[data-active] {
+  stroke: var(--ink);
+}
+
+.dotKey {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.muted {
+  color: var(--ink-3);
+}
