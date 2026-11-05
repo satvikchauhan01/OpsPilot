@@ -28,7 +28,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # Without the dependencies' install scripts: the checks need none of them (the only ones
+      # fetch optional GPU builds of ONNX Runtime or print warnings), and a compromised
+      # package can't run code on install.
+      - run: npm ci --ignore-scripts
       - run: npm run lint
       - run: npm run format:check
       - run: npm test
