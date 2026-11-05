@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "description": "AI incident response and reliability copilot for Kubernetes",
+  "author": "Satvik (https://github.com/satvikchauhan01)",
+  "repository": "github:satvikchauhan01/OpsPilot",
   "license": "MIT",
   "engines": {
     "node": ">=22"

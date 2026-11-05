@@ -6,7 +6,6 @@
 .git
 .env
 .env.*
-.claude
 demo
 deploy
 docs
