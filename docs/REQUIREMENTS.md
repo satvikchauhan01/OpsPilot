@@ -1,12 +1,11 @@
 # OpsPilot — Requirements
 
-This file is the scope contract for OpsPilot. The project is **done only when every
-requirement below is implemented and its check has been run and passed**. Nothing is
-dropped or weakened quietly: if a requirement has to change, this file changes first,
-with the reason written next to it.
+What OpsPilot has to do, and how each part is checked. The project counts as **done only
+when every requirement below is implemented and its check has been run and passed**. When
+a requirement changes, it changes here first, with the reason written next to it.
 
-Every requirement has an ID. The [roadmap](ROADMAP.md), tests and commit messages refer
-to these IDs.
+Every requirement has an ID. The [roadmap](ROADMAP.md) and the
+[acceptance record](acceptance.md) refer to these IDs.
 
 ---
 
@@ -191,8 +190,8 @@ OpsPilot needs a real system to watch and repair. The demo system is a small onl
   similar incidents, actions, postmortem), runbooks, audit log and demo control. Since
   Phase 7 also insights, incident replay and team management.
 - **UI-2 Own visual identity.** The UI has its own design tokens and typography, and light
-  and dark themes. It doesn't use stock "AI app" looks: no purple gradients, glassmorphism,
-  emoji icons or generic card grids.
+  and dark themes, made for an operations console rather than taken from a template: no
+  purple gradients, glassmorphism, emoji icons or generic card grids.
 - **UI-3 Interactive.** Data updates live. Hovering the timeline highlights the same moment
   on the metric charts. The dependency graph can be clicked to focus a service. There are
   keyboard shortcuts for navigation and a shortcut help overlay.

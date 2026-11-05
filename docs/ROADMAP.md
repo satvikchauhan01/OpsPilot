@@ -1,9 +1,9 @@
 # OpsPilot — Roadmap
 
-The build happened in six phases, and a seventh was added afterwards to make the console a
-strength of the project. Each one ends with a review, and the next phase starts only after
-the current one has been committed. IDs such as `DS-5` refer to
-[REQUIREMENTS.md](REQUIREMENTS.md), which defines what "done" means.
+I built OpsPilot in seven phases: six for the system itself, and a seventh for the console
+once everything behind it worked. Each phase lists what it delivers and its exit criteria,
+then a verification note with what was checked and what it showed. IDs such as `DS-5` refer
+to [REQUIREMENTS.md](REQUIREMENTS.md), which defines what "done" means.
 
 | Phase | Theme | Status |
 |-------|-------|--------|
@@ -31,8 +31,6 @@ Kubernetes.
 
 **Exit criteria:** every scenario fires its alert within 3 minutes, `reset` returns
 everything to green within 5 minutes, and Grafana shows all four services.
-
-**Needs from you:** nothing.
 
 **Verification (2026-09-25, minikube, Kubernetes 1.34):**
 
@@ -72,8 +70,6 @@ everything to green within 5 minutes, and Grafana shows all four services.
 **Exit criteria:** S1 and S3 each produce exactly one incident whose timeline and blast
 radius are correct, and the UI updates without a refresh.
 
-**Needs from you:** the MongoDB Atlas connection string (a free M0 cluster), provided on 2026-09-26.
-
 **Verification (2026-09-25):**
 
 - IN-1: a webhook call with a wrong token gets `401` and nothing is stored.
@@ -111,8 +107,6 @@ radius are correct, and the UI updates without a refresh.
 **Exit criteria:** the correct root cause is ranked first for S1–S4 (at least 4 of 5 runs
 each).
 
-**Needs from you:** a Gemini API key from Google AI Studio (free, no card needed).
-
 **Verification (2026-09-26, `gemini-3.5-flash-lite`):**
 
 - AI-6: 18 of 20 runs ranked the right service and cause first: S1 5/5, S2 4/5, S3 4/5,
@@ -142,8 +136,6 @@ each).
 
 **Exit criteria:** incidents show relevant runbook sections, and a repeated S1 finds its
 earlier occurrence.
-
-**Needs from you:** nothing (the server creates the vector indexes itself).
 
 **Verification (2026-09-26, MongoDB Atlas M0, `Xenova/all-MiniLM-L6-v2`):**
 
@@ -200,8 +192,6 @@ earlier occurrence.
 - [x] Tests for action validation and verification — QA-1
 
 **Exit criteria:** RM-7 passes for all four scenarios through the UI.
-
-**Needs from you:** nothing.
 
 **Verification (2026-09-26):**
 
@@ -295,9 +285,6 @@ earlier occurrence.
 
 **Exit criteria:** the Definition of Done in REQUIREMENTS.md is met.
 
-**Needs from you:** a VM (Oracle Cloud Always Free is the best fit, and Azure for Students
-works if you can't add a card) and a free domain or subdomain.
-
 **Verification (2026-09-26, locally):** each requirement and its proof is listed in
 [acceptance.md](acceptance.md). The main checks:
 
@@ -364,9 +351,8 @@ Students VM (Standard_B2als_v2 in East Asia, Hong Kong).
 
 ## Phase 7 — Console
 
-**Goal:** make the console a strength of the project, as solid as the backend behind it:
-easier to find your way around, more to see, and more to do with what the server already
-knows.
+**Goal:** a console as capable as the backend behind it: easier to find your way around,
+more to see, and more to do with what the server already knows.
 
 - [x] Sidebar navigation with open-incident count, breadcrumbs, and a command palette — UI-6
 - [x] A detail panel for every service, with its own metrics endpoint — UI-7
@@ -408,7 +394,7 @@ knows.
   effects twice. The main bundle passed 500 kB; insights, the replay and the team page now
   load on first use (478 kB, 150 kB gzipped).
 - Not checked here: browser notifications need the browser's permission, which the
-  embedded test browser can't grant. The permission request and the "blocked" message are
-  in place; the notification itself was not seen.
+  automated test browser couldn't grant. The permission request and the "blocked" message
+  are in place; the notification itself was not seen.
 - QA: 120 unit tests pass (12 new: insights statistics, team rules and incident progress),
   `npm run lint` is clean, Prettier has formatted every file, and the console builds.

@@ -222,3 +222,8 @@ npm run evaluate    # runs every scenario 5 times and scores the AI (writes docs
 [roadmap](docs/ROADMAP.md) records how each phase was verified, and
 [acceptance.md](docs/acceptance.md) maps every requirement to its evidence. The AI's
 accuracy per scenario is in [evaluation.md](docs/evaluation.md).
+
+## Author
+
+Built by Satvik ([@satvikchauhan01](https://github.com/satvikchauhan01)). Released under the
+[MIT License](LICENSE).
