@@ -1,0 +1,52 @@
+# Every push to main and every pull request: lint, formatting, unit tests, and a build of
+# each image. Deploys stay manual (`npm run cloud -- deploy`, see docs/DEPLOYMENT.md).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, format and tests
+    runs-on: ubuntu-latest
+    env:
+      # The server's config refuses to load without these two. No test connects anywhere.
+      MONGODB_URI: mongodb://127.0.0.1:27017/opspilot-ci
+      ALERTMANAGER_WEBHOOK_TOKEN: ci-placeholder-token
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+
+  images:
+    name: Build ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: server
+            args: -f apps/server/Dockerfile .
+          - image: web
+            args: -f apps/web/Dockerfile .
+          # One release of the shop is enough: every service and version shares this Dockerfile
+          - image: demo
+            args: --build-arg SERVICE=gateway --build-arg APP_VERSION=1.0.0 demo
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build --tag opspilot-ci/${{ matrix.image }} ${{ matrix.args }}
