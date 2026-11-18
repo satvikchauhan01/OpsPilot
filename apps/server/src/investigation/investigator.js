@@ -1,9 +1,7 @@
-import { Alert } from '../models/alert.js';
 import { bus } from '../realtime/bus.js';
 import { logger } from '../logger.js';
 import { createSerialQueue } from '../lib/serial-queue.js';
 import { LlmOverloadedError } from '../llm/gemini.js';
-import { createTools } from './tools.js';
 import { FINDINGS_PARAMETERS, validateFindings } from './findings.js';
 import { briefing, systemPrompt } from './prompt.js';
 
@@ -37,17 +35,32 @@ const SUBMIT = {
 /**
  * Runs one investigation to completion and stores every step as it happens.
  * `investigation` is a queued Investigation document for `incident`.
+ *
+ * Everything that reaches outside the process comes in as a parameter, like `llm`, so the
+ * loop can run against fakes:
+ *   toolsFor({ incident, anchor, incidentStart })  the tools the model may call (tools.js)
+ *   findAlerts(incidentId)                         the incident's alerts, oldest first
+ *   save(investigation)                            stores the document
  */
-export async function runInvestigation({ investigation, incident, llm, telemetry, knowledge, services }) {
+export async function runInvestigation({
+  investigation,
+  incident,
+  llm,
+  knowledge,
+  services,
+  toolsFor,
+  findAlerts,
+  save,
+}) {
   const started = Date.now();
   const anchor = incident.status === 'resolved' && incident.resolvedAt ? incident.resolvedAt : new Date();
-  const tools = createTools({ ...telemetry, knowledge, incident, anchor, incidentStart: incident.startedAt });
-  const run = createRecorder(investigation);
+  const tools = toolsFor({ incident, anchor, incidentStart: incident.startedAt });
+  const run = createRecorder(investigation, save);
 
   try {
     await run.update({ status: 'running', startedAt: new Date(), model: llm.model });
 
-    const alerts = await Alert.find({ incident: incident._id }).sort({ startsAt: 1 });
+    const alerts = await findAlerts(incident._id);
     await run.addEvidence({
       tool: 'incident_alerts',
       title: 'Alerts in this incident',
@@ -184,14 +197,14 @@ function formatEvidence(evidence) {
 // Persists the investigation as it progresses and tells browsers about every change.
 // Saves go through a queue so two updates never save the document at the same moment,
 // which Mongoose refuses.
-function createRecorder(investigation) {
+function createRecorder(investigation, store) {
   const doc = investigation;
   const enqueue = createSerialQueue();
   let tokens = 0;
 
   function save() {
     return enqueue(async () => {
-      await doc.save();
+      await store(doc);
       bus.publish('investigation.updated', {
         incidentNumber: doc.incidentNumber,
         id: doc.id,

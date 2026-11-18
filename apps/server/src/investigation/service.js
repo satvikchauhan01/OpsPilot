@@ -1,3 +1,4 @@
+import { Alert } from '../models/alert.js';
 import { Incident } from '../models/incident.js';
 import { Investigation } from '../models/investigation.js';
 import { HttpError, notFound } from '../http/errors.js';
@@ -5,6 +6,7 @@ import { bus } from '../realtime/bus.js';
 import { logger } from '../logger.js';
 import { createSerialQueue } from '../lib/serial-queue.js';
 import { runInvestigation } from './investigator.js';
+import { createTools } from './tools.js';
 
 const FALLBACK_SERVICES = ['checkout', 'gateway', 'inventory', 'payments'];
 const CATCH_UP_EVERY_MS = 60_000;
@@ -53,9 +55,11 @@ export function createInvestigationService({ llm, telemetry, knowledge, incident
         investigation,
         incident: current,
         llm,
-        telemetry,
         knowledge,
         services: knownServices(),
+        toolsFor: (context) => createTools({ ...telemetry, knowledge, ...context }),
+        findAlerts: (incidentId) => Alert.find({ incident: incidentId }).sort({ startsAt: 1 }),
+        save: (doc) => doc.save(),
       });
     }).catch((err) => logger.error({ err, incident: number }, 'investigation crashed'));
 
